@@ -9,7 +9,7 @@ namespace LVNC
     {
         static void Main(string[] args)
         {
-            VncServer s = new VncServer("robert", 5900, "VNC-Test");
+            VncServer s = new VncServer("T1T4N", 5900, "T!T@N - VNC");
             s.Start();
             Console.ReadLine();
         }
