@@ -20,6 +20,10 @@ using System.Runtime.InteropServices;
 
 namespace NVNC
 {
+    /// <summary>
+    /// A clone of Java's Robot class.
+    /// Used to handle keyboard and mouse events.
+    /// </summary>
     public static class Robot
     {
         /*
@@ -39,7 +43,7 @@ namespace NVNC
             IntPtr dwExtraInfo // application-defined information
         );
 
-        public class KeyCode
+        private class KeyCode
         {
             public int key;
             public bool isShift;
@@ -58,18 +62,13 @@ namespace NVNC
             {
                 string sCode = "";
                 KeyCode localKeyCode = keysym.toVKCode(key);
-                //Console.WriteLine(localKeyCode.key);
                 if (localKeyCode != null)
                 {
                     sCode = keysym.vkToString(localKeyCode.key);
-                    //Console.WriteLine(sCode + "\n" + localKeyCode.key.ToString());
-                    //Console.WriteLine("SHIFT: " + shift);
                     try
                     {
-                        //Console.WriteLine("Pressed: " + pressed);
                         if (pressed)
                         {
-                            //keyPress(localKeyCode.key);
                             if ((localKeyCode.key == (int)_KeyEvent.VK_SHIFT) || (localKeyCode.key == (int)_KeyEvent.VK_LSHIFT) || (localKeyCode.key == (int)_KeyEvent.VK_RSHIFT))
                                 shift = true;
                             if ((localKeyCode.key == (int)_KeyEvent.VK_MENU) || (localKeyCode.key == (int)_KeyEvent.VK_LMENU) || (localKeyCode.key == (int)_KeyEvent.VK_RMENU))
@@ -79,7 +78,6 @@ namespace NVNC
                         }
                         else
                         {
-                            //keyRelease(localKeyCode.key);
                             if ((localKeyCode.key == (int)_KeyEvent.VK_SHIFT) || (localKeyCode.key == (int)_KeyEvent.VK_LSHIFT) || (localKeyCode.key == (int)_KeyEvent.VK_RSHIFT))
                                 shift = false;
                             if ((localKeyCode.key == (int)_KeyEvent.VK_MENU) || (localKeyCode.key == (int)_KeyEvent.VK_LMENU) || (localKeyCode.key == (int)_KeyEvent.VK_RMENU))
@@ -94,26 +92,22 @@ namespace NVNC
                     }
                 }
                 if (!pressed)
-                    try
-                    {
-                        //Console.WriteLine("SHIFT: " + shift);
-                        string keys = "";
-                        if (shift && (sCode != "+"))
-                            keys += "+";
-                        if (ctrl && (sCode != "^"))
-                            keys += "^";
-                        if (alt && (sCode != "%"))
-                            keys += "%";
+                {
+                    string keys = "";
+                    if (shift && (sCode != "+"))
+                        keys += "+";
+                    if (ctrl && (sCode != "^"))
+                        keys += "^";
+                    if (alt && (sCode != "%"))
+                        keys += "%";
 
-                        keys += sCode;
+                    keys += sCode;
 
-                        Console.WriteLine(keys);
-                        try { System.Windows.Forms.SendKeys.SendWait(keys); }
-                        catch { }
+                    Console.WriteLine(keys);
+                    try { System.Windows.Forms.SendKeys.SendWait(keys); }
+                    catch { }
 
-                    }
-                    finally
-                    { }
+                }
             }
             catch (Exception ex)
             {
@@ -131,6 +125,13 @@ namespace NVNC
             keybd_event(MapKeyCode(keycode), 0, KEYEVENTF_KEYUP, IntPtr.Zero);
         }
         */
+
+        /// <summary>
+        /// Moves the mouse pointer to the specified location, and/or presses the specified mouse buttons.
+        /// </summary>
+        /// <param name="Mask">The button mask, depending on which mouse button was pressed</param>
+        /// <param name="X">The X coordinate where the pointer should be moved.</param>
+        /// <param name="Y">The Y coordinate where the pointer should be moved.</param>
         public static void PointerEvent(byte Mask, ushort X, ushort Y)
         {
             int i = 0;
@@ -148,21 +149,25 @@ namespace NVNC
                     MousePress(i);
                 }
                 else
-                {
                     MouseRelease(mouseModifiers);
-                }
                 mouseModifiers = i;
             }
             else
-            {
                 MouseMove(X, Y);
-            }
         }
-
+        /// <summary>
+        /// Moves the cursor to the specified position on screen.
+        /// </summary>
+        /// <param name="x">The X coordinate where the cursor will be moved.</param>
+        /// <param name="y">The Y coordinate where the cursor will be moved.</param>
         private static void MouseMove(int x, int y)
         {
             System.Windows.Forms.Cursor.Position = new System.Drawing.Point(x, y);
         }
+        /// <summary>
+        /// Performs a mouse key press.
+        /// </summary>
+        /// <param name="button">The mouse button that should be pressed. Left, right, or middle</param>
         private static void MousePress(int button)
         {
             int dwFlags = 0;
@@ -180,6 +185,10 @@ namespace NVNC
             }
             mouse_event(dwFlags, 0, 0, 0, IntPtr.Zero);
         }
+        /// <summary>
+        /// Releases a pressed mouse button.
+        /// </summary>
+        /// <param name="button">The mouse button that should be released.</param>
         private static void MouseRelease(int button)
         {
             int dwFlags = 0;
@@ -197,6 +206,10 @@ namespace NVNC
             }
             mouse_event(dwFlags, 0, 0, 0, IntPtr.Zero);
         }
+        /// <summary>
+        /// Scrolls the mouse wheel
+        /// </summary>
+        /// <param name="wheel">The mouse wheel code.</param>
         private static void mouseWheel(int wheel)
         {
             mouse_event(0, 0, 0, wheel, IntPtr.Zero);
@@ -215,7 +228,7 @@ namespace NVNC
         private const int MOUSEEVENTF_RIGHTUP = 0x0010;
         private const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;
         private const int MOUSEEVENTF_MIDDLEUP = 0x0040;
-        
+
         private enum _KeyEvent : int
         {
             VK_BACK = 0x08,
@@ -672,7 +685,7 @@ namespace NVNC
                     case F24: return (int)_KeyEvent.VK_F12;
 
                     case CapsLock: return (int)_KeyEvent.VK_CAPITAL;
-                    //No Java equivalent: case ShiftLock: return (int)_KeyEvent.;
+                    //No C# equivalent: case ShiftLock: return (int)_KeyEvent.;
                     default: return 0;
                 }
             }
@@ -1196,7 +1209,7 @@ namespace NVNC
                     c[0] = 'û';
                     return new String(c);
                 }
-                 if (vk == '!')
+                if (vk == '!')
                 {
                     c[0] = (char)vk;
                     return new String(c);
@@ -1223,15 +1236,15 @@ namespace NVNC
                 }
                 if (vk == 65361)
                 {
-                    vk = (int)_KeyEvent.VK_LEFT; 
+                    vk = (int)_KeyEvent.VK_LEFT;
                 }
                 if (vk == 65363)
                 {
-                    vk = (int)_KeyEvent.VK_RIGHT; 
+                    vk = (int)_KeyEvent.VK_RIGHT;
                 }
                 if (vk == 65362)
                 {
-                    vk = (int)_KeyEvent.VK_UP; 
+                    vk = (int)_KeyEvent.VK_UP;
                 }
                 if (vk == 65364)
                 {
@@ -1251,7 +1264,7 @@ namespace NVNC
                 }
                 if (vk == 65293)
                 {
-                    vk = (int)_KeyEvent.VK_RETURN; 
+                    vk = (int)_KeyEvent.VK_RETURN;
                 }
                 if (vk == 65535)
                 {

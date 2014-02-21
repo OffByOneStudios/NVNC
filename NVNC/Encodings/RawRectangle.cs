@@ -15,7 +15,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
 using System;
 using System.Drawing;
 
@@ -47,40 +46,13 @@ namespace NVNC.Encodings
         public override void WriteData()
         {
             base.WriteData();
-            writer.Write(Convert.ToUInt32(RfbProtocol.Encoding.RAW_ENCODING));
-            writer.Write(bytes);
+            rfb.WriteUInt32(Convert.ToUInt32(RfbProtocol.Encoding.RAW_ENCODING));
+            rfb.Write(bytes);
 
             /*  Very slow, not practically usable
             for (int i = 0; i < framebuffer.pixels.Length; i++)
                 pwriter.WritePixel(framebuffer[i]);
             */
         }
-
-
-
-        /*
-        public override byte[] WriteStream()
-        {
-            /*
-            Bitmap x = PixelGrabber.GrabImage(64, 64, pixels);
-            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
-            {
-                x.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
-                System.IO.File.WriteAllBytes("test.bmp", ms.ToArray());
-            }
-            System.Windows.Forms.MessageBox.Show("OK");
-            
-            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
-            {
-                using (BigEndianBinaryWriter bw = new BigEndianBinaryWriter(ms))
-                {
-                    bw.Write(base.WriteStream());
-                    bw.Write(Convert.ToUInt32(RfbProtocol.Encoding.RAW_ENCODING));
-                    bw.Write(bytes);
-                }
-                return ms.ToArray();
-            }
-        }
-        */
     }
 }

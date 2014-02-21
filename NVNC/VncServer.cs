@@ -18,18 +18,18 @@
 using System;
 using System.Drawing;
 using System.Threading;
-using System.IO;
 
 namespace NVNC
 {
+    /// <summary>
+    /// A wrapper class that should be used. It represents a VNC Server, and handles all the RFB procedures and communication.
+    /// </summary>
     public class VncServer
     {
-        protected RfbProtocol host;
-        protected Framebuffer fb;
+        private RfbProtocol host;
+        private Framebuffer fb;
 
         private int _port;
-
-        [System.ComponentModel.DefaultValue(5900)]
         public int Port
         {
             get
@@ -54,7 +54,12 @@ namespace NVNC
                 _password = value;
             }
         }
+
         private string _name;
+        /// <summary>
+        /// The VNC Server name.
+        /// <remarks>The variable value should be non-null.</remarks>
+        /// </summary>
         public string Name
         {
             get
@@ -66,48 +71,35 @@ namespace NVNC
                 _name = value;
             }
         }
-
+        /// <summary>
+        /// The default constructor using the default values for the parameters.
+        /// Port is set to 5900, the Name is set to Default, and there is no password.
+        /// </summary>
         public VncServer()
-        {
-            Size screenSize = ScreenSize();
-            fb = new Framebuffer(screenSize.Width, screenSize.Height);
+            : this("", 5900, "Default")
+        { }
 
-            fb.BitsPerPixel = 32;
-            fb.Depth = 24;
-            fb.BigEndian = true;
-            fb.TrueColour = true;
-            fb.RedShift = 16;
-            fb.GreenShift = 8;
-            fb.BlueShift = 0;
-            fb.RedMax = fb.GreenMax = fb.BlueMax = 0xFF;
-        }
         public VncServer(string password, int port, string name)
         {
+            _password = password;
+            _port = port;
+            _name = name;
+
             Size screenSize = ScreenSize();
             fb = new Framebuffer(screenSize.Width, screenSize.Height);
 
             fb.BitsPerPixel = 32;
             fb.Depth = 24;
-            //fb.BigEndian = true;
-            fb.TrueColour = true;
+            fb.BigEndian = false;
+            fb.TrueColor = true;
             fb.RedShift = 16;
             fb.GreenShift = 8;
             fb.BlueShift = 0;
             fb.RedMax = fb.GreenMax = fb.BlueMax = 0xFF;
-
-            this.Password = password;
-            this.Port = port;
-            this.Name = name;
+            fb.DesktopName = name;
         }
 
         public void Start()
-        {
-            start();
-            /*Thread t = new Thread(start);
-            t.ApartmentState = ApartmentState.STA;
-            t.Start();*/
-        }
-        private void start()
         {
             if (String.IsNullOrEmpty(Name))
                 throw new ArgumentNullException("Name", "The VNC Server Name cannot be empty.");
@@ -115,9 +107,8 @@ namespace NVNC
                 throw new ArgumentNullException("Port", "The VNC Server port cannot be zero.");
             Console.WriteLine("Started VNC Server at port: " + Port);
 
-            fb.DesktopName = Name;
             host = new RfbProtocol(Port, Name);
-
+            
             host.WriteProtocolVersion();
             Console.WriteLine("Wrote Protocol Version");
 
@@ -141,46 +132,37 @@ namespace NVNC
                 Console.WriteLine("Server name: " + fb.DesktopName);
                 host.WriteServerInit(this.fb);
 
-                //RobotClient r = new RobotClient(host);
-                //r.defaultPixel = fb;
-
                 while ((host.isRunning))
                 {
-                    //new Thread(r.DoShit).Start();
-                    //r.DoShit();
                     switch (host.ReadServerMessageType())
                     {
-                        case 0:
+                        case RfbProtocol.ClientMessages.SET_PIXEL_FORMAT:
                             Console.WriteLine("Read SetPixelFormat");
-                            //Console.WriteLine("Before SPF:");
-                            //fb.Print();
                             Framebuffer f = host.ReadSetPixelFormat(fb.Width, fb.Height);
                             if (f != null)
                                 fb = f;
-                            //Console.WriteLine("\nAfter SPF:");
-                            //fb.Print();
                             break;
-                        case 1:
-                            Console.WriteLine("Read ReadColourMapEntry");
-                            host.ReadColourMapEntry();
+                        case RfbProtocol.ClientMessages.READ_COLOR_MAP_ENTRIES:
+                            Console.WriteLine("Read ReadColorMapEntry");
+                            host.ReadColorMapEntry();
                             break;
-                        case 2:
+                        case RfbProtocol.ClientMessages.SET_ENCODINGS:
                             Console.WriteLine("Read SetEncodings");
                             host.ReadSetEncodings();
                             break;
-                        case 3:
+                        case RfbProtocol.ClientMessages.FRAMEBUFFER_UPDATE_REQUEST:
                             Console.WriteLine("Read FrameBufferUpdateRequest");
                             host.ReadFrameBufferUpdateRequest(fb);
                             break;
-                        case 4:
-                            Console.WriteLine("Read KeyEvent");
+                        case RfbProtocol.ClientMessages.KEY_EVENT:
+                            Console.WriteLine("Read KeyEvent");      
                             host.ReadKeyEvent();
                             break;
-                        case 5:
+                        case RfbProtocol.ClientMessages.POINTER_EVENT:
                             Console.WriteLine("Read PointerEvent");
                             host.ReadPointerEvent();
                             break;
-                        case 6:
+                        case RfbProtocol.ClientMessages.CLIENT_CUT_TEXT:
                             Console.WriteLine("Read CutText");
                             host.ReadClientCutText();
                             break;
@@ -189,6 +171,13 @@ namespace NVNC
                 if (!host.isRunning)
                     Start();
             }
+        }
+        /// <summary>
+        /// Closes all active connections, and stops the VNC Server from listening on the specified port.
+        /// </summary>
+        public void Stop()
+        {
+            this.host.Close();
         }
         private Size ScreenSize()
         {

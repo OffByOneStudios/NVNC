@@ -15,7 +15,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
 using System;
 using System.Drawing;
 
@@ -35,26 +34,23 @@ namespace NVNC.Encodings
         }
         public override void WriteData()
         {
-            System.Diagnostics.Stopwatch Watch = System.Diagnostics.Stopwatch.StartNew();
-            writer.Write(Convert.ToUInt16(rectangle.X));
-            writer.Write(Convert.ToUInt16(rectangle.Y));
-            writer.Write(Convert.ToUInt16(rectangle.Width));
-            writer.Write(Convert.ToUInt16(rectangle.Height));
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.X));
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.Y));
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.Width));
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.Height));
 
-            writer.Write(Convert.ToUInt32(RfbProtocol.Encoding.CORRE_ENCODING));
-            writer.Write(Convert.ToUInt32(this.subrects.Length));
+            rfb.WriteUInt32(Convert.ToUInt32(RfbProtocol.Encoding.CORRE_ENCODING));
+            rfb.WriteUInt32(Convert.ToUInt32(this.subrects.Length));
 
             WritePixel32(this.bgpixel);
             for (int i = 0; i < this.subrects.Length; i++)
             {
                 WritePixel32(this.subrects[i].pixel);
-                writer.Write((byte)this.subrects[i].x);
-                writer.Write((byte)this.subrects[i].y);
-                writer.Write((byte)this.subrects[i].w);
-                writer.Write((byte)this.subrects[i].h);
+                rfb.WriteByte(Convert.ToByte(this.subrects[i].x));
+                rfb.WriteByte(Convert.ToByte(this.subrects[i].y));
+                rfb.WriteByte(Convert.ToByte(this.subrects[i].w));
+                rfb.WriteByte(Convert.ToByte(this.subrects[i].h));
             }
-            Watch.Stop();
-            Console.WriteLine("GOTOVO! " + Watch.Elapsed);
         }
     }
 }

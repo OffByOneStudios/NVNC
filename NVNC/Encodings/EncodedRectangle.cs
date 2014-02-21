@@ -15,7 +15,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
 using System;
 using System.IO;
 using System.Drawing;
@@ -23,14 +22,13 @@ using System.Drawing;
 namespace NVNC.Encodings
 {
     /// <summary>
-    /// Abstract class representing an Encoded Rectangle to be encoded and written.
+    /// Abstract class representing an Rectangle to be encoded and written.
     /// </summary>
     public abstract class EncodedRectangle
     {
         protected RfbProtocol rfb;
         protected Rectangle rectangle;
         protected Framebuffer framebuffer;
-        protected BinaryWriter writer;
         protected byte[] bytes;
 
         public EncodedRectangle(RfbProtocol rfb, Framebuffer framebuffer, Rectangle rectangle, RfbProtocol.Encoding encoding)
@@ -38,35 +36,6 @@ namespace NVNC.Encodings
             this.rfb = rfb;
             this.framebuffer = framebuffer;
             this.rectangle = rectangle;
-
-            //Select appropriate writer
-            writer = (encoding == RfbProtocol.Encoding.ZRLE_ENCODING || encoding == RfbProtocol.Encoding.ZLIB_ENCODING) ? rfb.ZrleWriter : rfb.Writer;
-
-            // Create the appropriate PixelWriter depending on bits per pixel
-            /*
-            switch (framebuffer.BitsPerPixel)
-            {
-                case 32:
-
-                    if (encoding == RfbProtocol.Encoding.ZRLE_ENCODING)
-                    {
-                        pwriter = new CPixelWriter(writer, framebuffer);
-                    }
-                    else
-                    {
-                        pwriter = new PixelWriter32(writer, framebuffer);
-                    }
-                    break;
-                case 16:
-                    pwriter = new PixelWriter16(writer, framebuffer);
-                    break;
-                case 8:
-                    pwriter = new PixelWriter8(writer, framebuffer);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException("BitsPerPixel", framebuffer.BitsPerPixel, "Valid VNC Pixel Widths are 8, 16 or 32 bits.");
-            }
-            */
         }
 
         /// <summary>
@@ -81,34 +50,22 @@ namespace NVNC.Encodings
         }
 
         /// <summary>
-        /// Obtain all necessary information from VNC Host (i.e., read) in order to Draw the rectangle, and store in colours[].
+        /// Encode the pixel data from the supplied rectangle and store it in the bytes array.
         /// </summary>
         public abstract void Encode();
 
+        /// <summary>
+        /// Writes the generic rectangle data to the stream.
+        /// It's coordinates and size.
+        /// </summary>
         public virtual void WriteData()
         {
-            rfb.Writer.Write(Convert.ToUInt16(rectangle.X));
-            rfb.Writer.Write(Convert.ToUInt16(rectangle.Y));
-            rfb.Writer.Write(Convert.ToUInt16(rectangle.Width));
-            rfb.Writer.Write(Convert.ToUInt16(rectangle.Height));
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.X));
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.Y));
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.Width));
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.Height));
         }
-        /*
-        public virtual byte[] WriteStream()
-        {
-            using (MemoryStream ms = new MemoryStream())
-            {
-                using (BigEndianBinaryWriter bw = new BigEndianBinaryWriter(ms))
-                {
-                    bw.Write(Convert.ToUInt16(rectangle.X));
-                    bw.Write(Convert.ToUInt16(rectangle.Y));
-                    bw.Write(Convert.ToUInt16(rectangle.Width));
-                    bw.Write(Convert.ToUInt16(rectangle.Height));
-                }
-                return ms.ToArray();
-            }
-        }
-        */
-
+        
         protected void WritePixel32(int px)
         {
             int pixel;
@@ -121,7 +78,7 @@ namespace NVNC.Encodings
             bytes[b++] = (byte)((pixel >> 16) & 0xFF);
             bytes[b++] = (byte)((pixel >> 24) & 0xFF);
 
-            writer.Write(bytes);
+            rfb.Write(bytes);
         }
         protected int[] CopyPixels(int[] pixels, int scanline, int x, int y, int w, int h)
         {

@@ -15,7 +15,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
 using System;
 using System.Drawing;
 
@@ -31,13 +30,13 @@ namespace NVNC.Encodings
         { }
 
         // CopyRect Source Point (x,y) from which to copy pixels in Draw
-        Point source;
+        //Point source;
 
         public override void Encode()
         {
             //source = new Point();
-            writer.Write((ushort)rectangle.X);
-            writer.Write((ushort)rectangle.Y);
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.X));
+            rfb.WriteUInt16(Convert.ToUInt16(rectangle.Y));
         }
     }
 }

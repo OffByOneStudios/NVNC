@@ -21,28 +21,60 @@ using ComponentAce.Compression.Libs.zlib;
 
 namespace NVNC
 {
-    public sealed class ZrleCompressedWriter : BinaryWriter
+    /// <summary>
+    /// A BinaryWriter that uses the Zlib algorithm to write compressed data to a Stream.
+    /// I have overrided only the necessary methods used by the ZRLE and Zlib encoding.
+    /// </summary>
+    public sealed class ZlibCompressedWriter : BinaryWriter
     {
-        MemoryStream zMemoryStream;
-        ZOutputStream zCompressStream;
-        BinaryWriter compressedWriter;
-        BigEndianBinaryWriter bigWriter;
-        long oldPos;
-        public ZrleCompressedWriter(Stream uncompressedStream)
+        /// <summary>
+        /// A temporary MemoryStream to hold the compressed data.
+        /// </summary>
+        private MemoryStream zMemoryStream;
+
+        private ZOutputStream zCompressStream;
+
+        /// <summary>
+        /// CompressedWriter is used to write the compressed bytes from zMemoryStream to uncompressedStream.
+        /// </summary>
+        private BinaryWriter compressedWriter;
+        /// <summary>
+        /// BigWriter is used to write the number of bytes in a BigEndian format.
+        /// </summary>
+        private BigEndianBinaryWriter bigWriter;
+        
+        private long oldPos;
+
+        /// <summary>
+        /// Writes compressed data to the given stream.
+        /// </summary>
+        /// <param name="uncompressedStream">A stream where the compressed data should be written.</param>
+        /// <param name="level">The Zlib compression level that should be used. Default is Z_BEST_COMPRESSION = 9.</param>
+        public ZlibCompressedWriter(Stream uncompressedStream, int level=9)
             : base(uncompressedStream)
         {
+            /* Since we need to write the number of compressed bytes that we are going to send first,
+             * We cannot directly write to the uncompressedStream.
+             * We first write the compressed data to zMemoryStream, and after that we write the data from it to the uncompressedStream
+             * using CompressedWriter.
+             */ 
+
             zMemoryStream = new MemoryStream();
-            zCompressStream = new ZOutputStream(zMemoryStream, 9);
+            zCompressStream = new ZOutputStream(zMemoryStream, level);
+            
+            //The VNC Protocol uses Z_SYNC_FLUSH as a Flush Mode
             zCompressStream.FlushMode = zlibConst.Z_SYNC_FLUSH;
+            
             compressedWriter = new BinaryWriter(uncompressedStream);
             bigWriter = new BigEndianBinaryWriter(uncompressedStream);
+            
             oldPos=0;
         }
         public override void Write(byte[] buffer, int index, int count)
         {
             zCompressStream.Write(buffer, index, count);
             long cPos = zMemoryStream.Position;
-            int len = (int)(cPos - oldPos);
+            int len = Convert.ToInt32(cPos - oldPos);
             long nPos = cPos - len;
 
             //compressedWriter.Write(len);
@@ -50,6 +82,9 @@ namespace NVNC
 
             int pos = 0;
             zMemoryStream.Position = nPos;
+
+            //Writing to a MemoryStream first, and then to the uncompressedStream all at once
+            //It is faster this way, since in our instance, the uncompressedStream is a NetworkStream.
             using (MemoryStream tmp = new MemoryStream())
             {
                 while (pos++ < len)
@@ -58,17 +93,17 @@ namespace NVNC
                     {
                         int bData = zMemoryStream.ReadByte();
                         tmp.WriteByte((byte)bData);
-                        //compressedWriter.Write((byte)bData);
-                        //bigWriter.Write((byte)bData);
                     }
                     catch (Exception ex)
                     {
-                        System.Windows.Forms.MessageBox.Show(ex.ToString());
+                        Console.WriteLine(ex.ToString());
                     }
                 }
                 compressedWriter.Write(tmp.ToArray());
             }
             Console.WriteLine("Compressed data length: " + len);
+            
+            //update our position in the stream
             oldPos = cPos;
         }
         public override void Write(byte[] buffer)
@@ -77,8 +112,9 @@ namespace NVNC
         }
         public override void Write(byte value)
         {
-            zCompressStream.WriteByte(value);
-            //compressedWriter.Write(value);
+            byte[] b = new byte[1];
+            b[0] = value;
+            this.Write(b, 0, 1);
         }
     }
 }

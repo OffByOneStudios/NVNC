@@ -58,7 +58,7 @@ namespace NVNC
         public override int ReadInt32()
         {
             FillBuff(4);
-            return (int)(buff[3] | buff[2] << 8 | buff[1] << 16 | buff[0] << 24);
+            return Convert.ToInt32(buff[3] | buff[2] << 8 | buff[1] << 16 | buff[0] << 24);
         }
 
         private void FillBuff(int totalBytes)

@@ -15,7 +15,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
 using System;
 using System.Drawing;
 using System.Collections.Generic;
@@ -31,7 +30,7 @@ namespace NVNC.Encodings
         private const int BACKGROUND_SPECIFIED = 0x02;
         private const int FOREGROUND_SPECIFIED = 0x04;
         private const int ANY_SUBRECTS = 0x08;
-        private const int SUBRECTS_COLOURED = 0x10;
+        private const int SUBRECTS_COLORED = 0x10;
 
         private Object[] tiles; // each element either Tile or byte[]
         private int[] pixels;
@@ -244,17 +243,12 @@ namespace NVNC.Encodings
 
             tiles = new Object[vector.Count];
             tiles = vector.ToArray();
-            /*
-            Watch.Stop();
-            Console.WriteLine("G1: " + Watch.Elapsed);
-            */
         }
         public override void WriteData()
         {
             base.WriteData();
-            writer.Write(Convert.ToUInt32(RfbProtocol.Encoding.HEXTILE_ENCODING));
-            
-            
+            rfb.WriteUInt32(Convert.ToUInt32(RfbProtocol.Encoding.HEXTILE_ENCODING));
+
             Tile tile;
             int mask;
             int oldBgpixel = 0x10000000;
@@ -263,7 +257,6 @@ namespace NVNC.Encodings
             byte[] b = new byte[2];
 
             //Console.WriteLine("Tiles: " + tiles.Length);
-            System.Diagnostics.Stopwatch Watch = System.Diagnostics.Stopwatch.StartNew();
 
             //Writing to a MemoryStream is faster, than writing to a NetworkStream, while being read chunk by chunk
             //Data is sent fast, when it is sent as one ordered byte array
@@ -288,13 +281,13 @@ namespace NVNC.Encodings
                             {
                                 if (tile.subrects[j].pixel != fgpixel)
                                 {
-                                    // Subrects are of varying colours
-                                    mask |= SUBRECTS_COLOURED;
+                                    // Subrects are of varying colors
+                                    mask |= SUBRECTS_COLORED;
                                     break;
                                 }
                             }
 
-                            if ((mask & SUBRECTS_COLOURED) == 0)
+                            if ((mask & SUBRECTS_COLORED) == 0)
                             {
                                 // All subrects have the same pixel
                                 mask |= FOREGROUND_SPECIFIED;
@@ -338,8 +331,8 @@ namespace NVNC.Encodings
                             //{
                             for (j = 0; j < tile.subrects.Length; j++)
                             {
-                                // Subrects coloured
-                                if ((mask & SUBRECTS_COLOURED) != 0)
+                                // Subrects colored
+                                if ((mask & SUBRECTS_COLORED) != 0)
                                 {
                                     byte[] x = PixelGrabber.GrabBytes(tile.subrects[j].pixel, framebuffer);
                                     ms.Write(x, 0, x.Length);
@@ -360,131 +353,8 @@ namespace NVNC.Encodings
                         //pwriter.Write((byte[])tiles[i]);
                     }
                 }
-                writer.Write(ms.ToArray());
-            }
-            Watch.Stop();
-            Console.WriteLine("GOTOVO! " + Watch.Elapsed);
-        }
-        /*
-        public override byte[] WriteStream()
-        {
-            System.Diagnostics.Stopwatch Watch = System.Diagnostics.Stopwatch.StartNew();
-            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
-            {
-                using (BigEndianBinaryWriter bw = new BigEndianBinaryWriter(ms))
-                {
-                    bw.Write(base.WriteStream());
-                    bw.Write(Convert.ToUInt32(RfbProtocol.Encoding.HEXTILE_ENCODING));
-
-                    Tile tile;
-                    int mask;
-                    int oldBgpixel = 0x10000000;
-                    int fgpixel = 0x10000000;
-                    int j;
-                    byte[] b = new byte[2];
-
-                    //Console.WriteLine("Tiles: " + tiles.Length);
-
-                    //Writing to a MemoryStream is faster, than writing to a NetworkStream, while being read chunk by chunk
-                    //Data is sent fast, when it is sent as one ordered byte array
-
-                    for (int i = 0; i < tiles.Length; i++)
-                    {
-                        if (tiles[i] is Tile)
-                        {
-                            tile = (Tile)tiles[i];
-                            mask = 0;
-
-                            // Do we have subrects?				
-                            if (tile.subrects.Length > 0)
-                            {
-                                // We have subrects
-                                mask |= ANY_SUBRECTS;
-
-                                // Do all subrects have the same pixel?
-                                fgpixel = tile.subrects[0].pixel;
-                                for (j = 1; j < tile.subrects.Length; j++)
-                                {
-                                    if (tile.subrects[j].pixel != fgpixel)
-                                    {
-                                        // Subrects are of varying colours
-                                        mask |= SUBRECTS_COLOURED;
-                                        break;
-                                    }
-                                }
-
-                                if ((mask & SUBRECTS_COLOURED) == 0)
-                                {
-                                    // All subrects have the same pixel
-                                    mask |= FOREGROUND_SPECIFIED;
-                                }
-                            }
-
-                            // Has the background changed?
-                            if (tile.bgpixel != oldBgpixel)
-                            {
-                                oldBgpixel = tile.bgpixel;
-                                mask |= BACKGROUND_SPECIFIED;
-                            }
-
-                            //pwriter.Write((byte)mask);
-                            bw.Write((byte)mask);
-
-                            // Background pixel
-                            if ((mask & BACKGROUND_SPECIFIED) != 0)
-                            {
-                                byte[] pd = PixelGrabber.GrabBytes(tile.bgpixel, framebuffer);
-                                bw.Write(pd, 0, pd.Length);
-
-                                //pwriter.WritePixel(tile.bgpixel);
-                            }
-
-                            // Foreground pixel
-                            if ((mask & FOREGROUND_SPECIFIED) != 0)
-                            {
-                                byte[] pd = PixelGrabber.GrabBytes(fgpixel, framebuffer);
-                                bw.Write(pd, 0, pd.Length);
-                                //pwriter.WritePixel(fgpixel);
-                            }
-
-                            // Subrects
-                            if ((mask & ANY_SUBRECTS) != 0)
-                            {
-                                bw.Write((byte)tile.subrects.Length);
-                                //pwriter.Write((byte)tile.subrects.Length);
-
-                                //using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
-                                //{
-                                for (j = 0; j < tile.subrects.Length; j++)
-                                {
-                                    // Subrects coloured
-                                    if ((mask & SUBRECTS_COLOURED) != 0)
-                                    {
-                                        byte[] x = PixelGrabber.GrabBytes(tile.subrects[j].pixel, framebuffer);
-                                        bw.Write(x, 0, x.Length);
-                                    }
-                                    bw.Write((byte)((tile.subrects[j].x << 4) | tile.subrects[j].y));
-                                    bw.Write((byte)(((tile.subrects[j].w - 1) << 4) | (tile.subrects[j].h - 1)));
-                                }
-                                //pwriter.Write(ms.ToArray());
-                                //}
-                            }
-                        }
-                        else
-                        {
-                            bw.Write((byte)RAW);
-                            //pwriter.Write((byte)RAW);
-
-                            bw.Write((byte[])tiles[i], 0, ((byte[])tiles[i]).Length);
-                            //pwriter.Write((byte[])tiles[i]);
-                        }
-                    }
-                }
-                Watch.Stop();
-                Console.WriteLine("GOTOVO! " + Watch.Elapsed);
-                return ms.ToArray();
+                rfb.Write(ms.ToArray());
             }
         }
-        */
     }
 }

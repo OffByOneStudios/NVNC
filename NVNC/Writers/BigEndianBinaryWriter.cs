@@ -21,7 +21,7 @@ using System.IO;
 namespace NVNC
 {
     /// <summary>
-    /// BigEndianBinaryWriter is a wrapper class used to write .NET integral types in Big-Endian order to a stream.  It inherits from BinaryWriter and adds Little- to Big-Endian conversion.
+    /// BigEndianBinaryWriter is a wrapper class used to write .NET integral types in Big-Endian order to a stream.  It inherits from BinaryWriter and adds Little-to-Big-Endian conversion.
     /// </summary>
     public sealed class BigEndianBinaryWriter : BinaryWriter
     {
@@ -33,7 +33,6 @@ namespace NVNC
             : base(input, encoding)
         { }
 
-        // Flip all little-endian .NET types into big-endian order and send
         public override void Write(ushort value)
         {
             FlipAndWrite(BitConverter.GetBytes(value));

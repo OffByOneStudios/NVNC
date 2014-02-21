@@ -15,7 +15,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
 using System;
 using System.Drawing;
 using System.Collections.Generic;
@@ -128,13 +127,10 @@ namespace NVNC.Encodings
         public override void WriteData()
         {
             base.WriteData();
-            writer.Write(Convert.ToUInt32(RfbProtocol.Encoding.RRE_ENCODING));
-            writer.Write(Convert.ToUInt32(subrects.Length));
+            rfb.WriteUint32(Convert.ToUInt32(RfbProtocol.Encoding.RRE_ENCODING));
+            rfb.WriteUInt32(Convert.ToUInt32(subrects.Length));
             WritePixel32(bgpixel);
 
-
-            Console.WriteLine(subrects.Length);
-            System.Diagnostics.Stopwatch Watch = System.Diagnostics.Stopwatch.StartNew();
             using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
             {
                 for (int i = 0; i < subrects.Length; i++)
@@ -153,12 +149,8 @@ namespace NVNC.Encodings
                     ms.Write(w, 0, w.Length);
                     ms.Write(h, 0, h.Length);
                 }
-                writer.Write(ms.ToArray());
+                rfb.Write(ms.ToArray());
             }
-
-            Watch.Stop();
-            Console.WriteLine("RRE Done in: " + Watch.Elapsed);
-
         }
         private byte[] Flip(byte[] b)
         {

@@ -1,6 +1,9 @@
 // NVNC - .NET VNC Server Library
 // Copyright (C) 2014 T!T@N
 //
+// This file is a heavy modified version of RfbProtocol.cs from the 
+// VncSharp project.
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -32,31 +35,46 @@ namespace NVNC
     /// </summary>
     public class RfbProtocol
     {
-        // Encoding Constants
+        /// <summary>
+        /// RFB Encoding constants.
+        /// </summary>
         public enum Encoding : int
         {
+            //encodings
             RAW_ENCODING = 0,  //working
             COPYRECT_ENCODING = 1,  //working
             RRE_ENCODING = 2,  //working
             CORRE_ENCODING = 4,  //error
             HEXTILE_ENCODING = 5,  //working
-            ZRLE_ENCODING = 16, //error
-            ZLIB_ENCODING = 6,
+            ZRLE_ENCODING = 16, //working
+            
+            //pseudo-encodings
+            ZLIB_ENCODING = 6, //working
+        }
+        /// <summary>
+        /// Server to Client Message-Type constants.
+        /// </summary>
+        public enum ServerMessages : int
+        {
+            FRAMEBUFFER_UPDATE = 0,
+            SET_COLOR_MAP_ENTRIES = 1,
+            BELL = 2,
+            SERVER_CUT_TEXT = 3,
         }
 
-        // Server to Client Message-Type constants
-        protected const int FRAMEBUFFER_UPDATE = 0;
-        protected const int SET_COLOUR_MAP_ENTRIES = 1;
-        protected const int BELL = 2;
-        protected const int SERVER_CUT_TEXT = 3;
-
-        // Client to Server Message-Type constants
-        protected const byte SET_PIXEL_FORMAT = 0;
-        protected const byte SET_ENCODINGS = 2;
-        protected const byte FRAMEBUFFER_UPDATE_REQUEST = 3;
-        protected const byte KEY_EVENT = 4;
-        protected const byte POINTER_EVENT = 5;
-        protected const byte CLIENT_CUT_TEXT = 6;
+        /// <summary>
+        /// Client to Server Message-Type constants.
+        /// </summary>
+        public enum ClientMessages : byte
+        {
+            SET_PIXEL_FORMAT = 0,
+            READ_COLOR_MAP_ENTRIES = 1,
+            SET_ENCODINGS = 2,
+            FRAMEBUFFER_UPDATE_REQUEST = 3,
+            KEY_EVENT = 4,
+            POINTER_EVENT = 5,
+            CLIENT_CUT_TEXT = 6,
+        }        
 
         //Version numbers
         protected int verMajor = 3;	// Major version of Protocol--probably 3
@@ -84,7 +102,7 @@ namespace NVNC
         protected NetworkStream stream;	// Stream object used to send/receive data
         protected BinaryReader reader;	// Integral rather than Byte values are typically
         protected BinaryWriter writer;	// sent and received, so these handle this.
-        protected ZrleCompressedWriter zrleWriter;
+        protected ZlibCompressedWriter zlibWriter; //The Zlib Stream Writer used for Zlib and ZRLE encodings
 
         public bool isRunning;
         public bool isConnected
@@ -133,7 +151,7 @@ namespace NVNC
         /// <summary>
         /// Gets the best encoding from the ones the client sent.
         /// </summary>
-        /// <returns>Returns a Int32 representation of the encoding.</returns>
+        /// <returns>Returns a enum representation of the encoding.</returns>
         public Encoding GetPreferredEncoding()
         {
             Encoding prefEnc = Encoding.ZRLE_ENCODING;
@@ -162,6 +180,7 @@ namespace NVNC
         /// <summary>
         /// Gets the Protocol Version of the remote VNC Host--probably 3.3, 3.7, or 3.8.
         /// </summary>
+        /// <returns>Returns a float representation of the protocol version that the server is using.</returns>
         public float ServerVersion
         {
             get
@@ -170,29 +189,17 @@ namespace NVNC
             }
         }
 
-        public BinaryReader Reader
+        public ZlibCompressedWriter ZlibWriter
         {
             get
             {
-                return reader;
+                return zlibWriter;
             }
         }
-        public BinaryWriter Writer
-        {
-            get
-            {
-                return writer;
-            }
-        }
-        public ZrleCompressedWriter ZrleWriter
-        {
-            get
-            {
-                return zrleWriter;
-            }
-        }
-        
-        //Main server loop
+
+        /// <summary>
+        /// The main server loop. Listening on the selected port occurs here, and accepting incoming connections
+        /// </summary>
         public void Start()
         {
             isRunning = true;
@@ -202,6 +209,7 @@ namespace NVNC
                 serverSocket.Server.NoDelay = true;
                 serverSocket.Start();
             }
+            //The port is being used, and serverSocket cannot start
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
@@ -210,192 +218,27 @@ namespace NVNC
             }
             try
             {
-                SocketError error = SocketError.AccessDenied;
+                //SocketError error = SocketError.AccessDenied;
+                
                 localClient = serverSocket.AcceptSocket();
-                localClient.NoDelay = true;
+                localClient.NoDelay = true; //Disable the Naggle algorithm
+                
                 IPAddress localIP = IPAddress.Parse(((IPEndPoint)localClient.RemoteEndPoint).Address.ToString());
                 Console.WriteLine(localIP);
+
                 stream = new NetworkStream(localClient, true);
                 reader = new BigEndianBinaryReader(stream);
                 writer = new BigEndianBinaryWriter(stream);
-                zrleWriter = new ZrleCompressedWriter(stream);
+                zlibWriter = new ZlibCompressedWriter(stream);
                 clients.Add(localClient);
             }
             catch (Exception ex) { Console.WriteLine(ex.ToString()); }
 
         }
-        /*public void  ()
-        {
-            this.dw = this.device.getDefaultConfiguration().getBounds().width;
-            this.dh = this.device.getDefaultConfiguration().getBounds().height;
-            int i = this.dw / 4;
-            int j = this.dh / 4;
-            BufferedImage localBufferedImage = this.robot.createScreenCapture(new Rectangle(0, 0, this.dw, this.dh));
-            for (int k = 0; k < 4; k++)
-              for (m = 0; m < 4; m++)
-              {
-                localObject1 = new Rectangle();
-                ((Rectangle)localObject1).x = (i * k);
-                ((Rectangle)localObject1).y = (j * m);
-                ((Rectangle)localObject1).width = i;
-                ((Rectangle)localObject1).height = j;
-                localObject1 = alignRectangle((Rectangle)localObject1);
-                this.rects[(k * 4 + m)] = localObject1;
-                this.oldImages[(k * 4 + m)] = localBufferedImage.getSubimage(((Rectangle)localObject1).x, ((Rectangle)localObject1).y, ((Rectangle)localObject1).width, ((Rectangle)localObject1).height);
-              }
-            ArrayList localArrayList = new ArrayList();
-            int m = 0;
-            Object localObject1 = null;
-            try
-            {
-              Thread.sleep(300L);
-            }
-            catch (Exception localException1)
-            {
-            }
-            long l1 = System.currentTimeMillis();
-            while (!this.stop)
-            {
-              if (this.defaultPixel == null)
-              {
-                try
-                {
-                  Thread.sleep(1000L);
-                }
-                catch (Exception localException2)
-                {
-                }
-                continue;
-              }
-              if (this.times++ > 0)
-                try
-                {
-                  if (this.clients.size() > 0)
-                  {
-                    int n = 0;
-                    Rectangle localRectangle1 = null;
-                    do
-                    {
-                      if (this.rectRatos[m] >= 0)
-                      {
-                        Rectangle localRectangle2 = this.rects[m];
-                        long l2 = System.currentTimeMillis();
-                        localObject1 = this.robot.createScreenCapture(localRectangle2);
-                        l2 = System.currentTimeMillis();
-                        localRectangle1 = getChangeArea(this.oldImages[m], (BufferedImage)localObject1, localRectangle2);
-                        if (localRectangle1 != null)
-                        {
-                          Iterator localIterator = this.clients.keySet().iterator();
-                          Object localObject2;
-                          while (localIterator.hasNext())
-                          {
-                            RFBClient localRFBClient = (RFBClient)localIterator.next();
-                            localObject2 = (RobotClient)this.clients.get(localRFBClient);
-                            ((RobotClient)localObject2).pe = localRFBClient.getPreferredEncoding();
-                            ((RobotClient)localObject2).pf = localRFBClient.getPixelFormat();
-                            if (((RobotClient)localObject2).pf == null)
-                              ((RobotClient)localObject2).pf = this.defaultPixel;
-                            Rect localRect = Rect.encode(((RobotClient)localObject2).pe, ((RobotClient)localObject2).pf, ((BufferedImage)localObject1).getSubimage(localRectangle1.x, localRectangle1.y, localRectangle1.width, localRectangle1.height), localRectangle1.x + localRectangle2.x, localRectangle1.y + localRectangle2.y);
-                            Rect[] arrayOfRect = { localRect };
-                            if (arrayOfRect == null)
-                              continue;
-                            try
-                            {
-                              localRFBClient.writeFrameBufferUpdate(arrayOfRect);
-                            }
-                            catch (SocketException localSocketException)
-                            {
-                              localArrayList.add(localRFBClient);
-                            }
-                            catch (Exception localException9)
-                            {
-                              localException9.printStackTrace();
-                            }
-                          }
-                          for (int i1 = 0; i1 < localArrayList.size(); i1++)
-                          {
-                            localObject2 = (RFBClient)localArrayList.get(i1);
-                            removeClient((RFBClient)localObject2);
-                          }
-                          localArrayList.clear();
-                          try
-                          {
-                            Thread.sleep(5L);
-                          }
-                          catch (Exception localException8)
-                          {
-                          }
-                          n += 5;
-                          this.oldImages[m] = localObject1;
-                          this.rectRatos[m] += 1;
-                        }
-                        else
-                        {
-                          try
-                          {
-                            Thread.sleep(10L);
-                          }
-                          catch (Exception localException7)
-                          {
-                          }
-                          this.rectRatos[m] -= 1;
-                        }
-                      }
-                      m = (m + 1) % 16;
-                      if (m == 0)
-                      {
-                        if (System.currentTimeMillis() - l1 > 3000L)
-                        {
-                          l1 = System.currentTimeMillis();
-                          Arrays.fill(this.rectRatos, 0);
-                        }
-                        if (n == 0)
-                          try
-                          {
-                            Thread.sleep(500L);
-                          }
-                          catch (Exception localException6)
-                          {
-                          }
-                      }
-                      if (localRectangle1 != null)
-                        break;
-                    }
-                    while (m != 0);
-                  }
-                  else
-                  {
-                    try
-                    {
-                      Thread.sleep(1000L);
-                    }
-                    catch (Exception localException3)
-                    {
-                    }
-                  }
-                  continue;
-                }
-                catch (Exception localException4)
-                {
-                  localException4.printStackTrace();
-                  continue;
-                }
-                finally
-                {
-                }
-              try
-              {
-                Thread.sleep(2000L);
-              }
-              catch (Exception localException5)
-              {
-              }
-            }
-        }*/
         /// <summary>
         /// Reads VNC Protocol Version message (see RFB Doc v. 3.8 section 6.1.1)
         /// </summary>
-        /// <exception cref="NotSupportedException">Thrown if the version of the is not known or supported.</exception>
+        /// <exception cref="NotSupportedException">Thrown if the version of the protocol is not known or supported.</exception>
         public void ReadProtocolVersion()
         {
             try
@@ -404,23 +247,23 @@ namespace NVNC
 
                 // As of the time of writing, the only supported versions are 3.3, 3.7, and 3.8.
                 if (b[0] == 0x52 &&					// R
-                        b[1] == 0x46 &&					// F
-                        b[2] == 0x42 &&					// B
-                        b[3] == 0x20 &&					// (space)
-                        b[4] == 0x30 &&					// 0
-                        b[5] == 0x30 &&					// 0
-                        b[6] == 0x33 &&					// 3
-                        b[7] == 0x2e &&					// .
-                       (b[8] == 0x30 ||                    // 0
-                        b[8] == 0x38) &&					// BUG FIX: Apple reports 8 
-                       (b[9] == 0x30 ||                     // 0
-                        b[9] == 0x38) &&					// BUG FIX: Apple reports 8 
-                       (b[10] == 0x33 ||					// 3, 7, OR 8 are all valid and possible
-                        b[10] == 0x36 ||					// BUG FIX: UltraVNC reports protocol version 3.6!
-                        b[10] == 0x37 ||
-                        b[10] == 0x38 ||
-                        b[10] == 0x39) &&                   // BUG FIX: Apple reports 9					
-                        b[11] == 0x0a)						// \n
+                    b[1] == 0x46 &&					// F
+                    b[2] == 0x42 &&					// B
+                    b[3] == 0x20 &&					// (space)
+                    b[4] == 0x30 &&					// 0
+                    b[5] == 0x30 &&					// 0
+                    b[6] == 0x33 &&					// 3
+                    b[7] == 0x2e &&					// .
+                   (b[8] == 0x30 ||                 // 0
+                    b[8] == 0x38) &&				// BUG FIX: Apple reports 8 
+                   (b[9] == 0x30 ||                 // 0
+                    b[9] == 0x38) &&				// BUG FIX: Apple reports 8 
+                   (b[10] == 0x33 ||				// 3, 7, OR 8 are all valid and possible
+                    b[10] == 0x36 ||				// BUG FIX: UltraVNC reports protocol version 3.6!
+                    b[10] == 0x37 ||
+                    b[10] == 0x38 ||
+                    b[10] == 0x39) &&               // BUG FIX: Apple reports 9					
+                    b[11] == 0x0a)					// \n
                 {
                     // Since we only currently support the 3.x protocols, this can be assumed here.
                     // If and when 4.x comes out, this will need to be fixed--however, the entire 
@@ -463,7 +306,7 @@ namespace NVNC
         }
 
         /// <summary>
-        /// Send the Protocol Version supported by the server.  Will be highest supported by client (see RFB Doc v. 3.8 section 6.1.1).
+        /// Sends the Protocol Version supported by the server.  Will be highest supported by client (see RFB Doc v. 3.8 section 6.1.1).
         /// </summary>
         public void WriteProtocolVersion()
         {
@@ -532,6 +375,7 @@ namespace NVNC
         /// If the password is not empty, perform VNC Authentication with it.
         /// </summary>
         /// <param name="password">The current VNC Password</param>
+        /// <returns>Returns a boolean value representing successful authentication or not.</returns>
         public bool WriteAuthentication(string password)
         {
             // Indicate to the client which type of authentication will be used.
@@ -574,6 +418,7 @@ namespace NVNC
                 if (verMinor >= 7)
                     reader.ReadByte();
 
+                //A random 16 byte challenge
                 byte[] bChallenge = new byte[16];
                 Random rand = new Random(System.DateTime.Now.Millisecond);
                 rand.NextBytes(bChallenge);
@@ -591,6 +436,7 @@ namespace NVNC
                 ICryptoTransform enc = des.CreateEncryptor(key, null);
                 byte[] ourBytes = new byte[16];
                 enc.TransformBlock(bChallenge, 0, bChallenge.Length, ourBytes, 0);
+                
                 /*
                 Console.WriteLine("Us: " + System.Text.Encoding.ASCII.GetString(ourBytes));
                 Console.WriteLine("Client sent us: " + System.Text.Encoding.ASCII.GetString(receivedBytes));
@@ -621,18 +467,7 @@ namespace NVNC
         }
 
         /// <summary>
-        /// Sends the encrypted Response back to the server.
-        /// </summary>
-        /// <param name="response">The DES password encrypted challege sent by the server.</param>
-        public void WriteSecurityResponse(byte[] response)
-        {
-            writer.Write(response, 0, response.Length);
-            writer.Flush();
-        }
-
-        /// <summary>
-        /// When the client uses VNC Authentication, after the Challege/Response,
-        /// a status code is sent to indicate whether authentication worked.
+        /// When the client uses VNC Authentication, after the Challege/Response, a status code is sent to indicate whether authentication worked.
         /// </summary>
         /// <param name="sr">An unsigned integer indicating the status of authentication: 0 = OK; 1 = Failed; 2 = Too Many (deprecated).</return
         public void WriteSecurityResult(uint sr)
@@ -664,7 +499,7 @@ namespace NVNC
         /// <summary>
         /// Writes the server's Initialization message, specifically the Framebuffer's properties.
         /// </summary>
-        /// <param name="fb">The framebuffer which properties are sent.</param>
+        /// <param name="fb">The framebuffer that is sent.</param>
         public void WriteServerInit(Framebuffer fb)
         {
             try
@@ -732,6 +567,7 @@ namespace NVNC
 
         /// <summary>
         /// Reads a request for an update of the area specified by (x, y, w, h).
+        /// <param name="fb">The server's current Framebuffer.</param>
         /// </summary>
         public void ReadFrameBufferUpdateRequest(Framebuffer fb)
         {
@@ -743,9 +579,11 @@ namespace NVNC
                 ushort width = reader.ReadUInt16();
                 ushort height = reader.ReadUInt16();
 
-                Console.WriteLine("FrameBufferUpdateRequest on x: " + x + " y: " + y + " w: " + width + " h:" + height);
-                //Console.ReadLine();
-                /*new Thread(delegate() { */DoFrameBufferUpdate(fb, incremental, x, y, width, height); /*}).Start();*/
+                //Console.WriteLine("FrameBufferUpdateRequest on x: " + x + " y: " + y + " w: " + width + " h:" + height);
+
+                /*new Thread(delegate() { */
+                DoFrameBufferUpdate(fb, incremental, x, y, width, height); 
+                /*}).Start();*/
             }
             catch (IOException ex)
             {
@@ -780,8 +618,9 @@ namespace NVNC
             }
 
             Console.WriteLine("Bounds OK!");
+
             List<EncodedRectangle> lst = new List<EncodedRectangle>();
-            List<byte[]> lstHash = new List<byte[]>();
+            //List<byte[]> lstHash = new List<byte[]>();
             try
             {
                 //Console.WriteLine("Framebuffer: ");
@@ -812,6 +651,7 @@ namespace NVNC
                  */
                 EncodedRectangle localRect = factory.Build(new Rectangle(x,y,width, height), GetPreferredEncoding());
                 localRect.Encode();
+
                 lst.Add(localRect);
                 Console.WriteLine("Encoding took: " + tip.Elapsed);
             }
@@ -828,46 +668,23 @@ namespace NVNC
 
         /// <summary>
         /// Writes the number of update rectangles being sent to the client.
-        /// After that, for each rectangle, the encoded data is written.
+        /// After that, for each rectangle, the encoded data is sent.
         /// </summary>
         public void WriteFrameBufferUpdate(EncodedRectangle[] arrRectangles)
         {
             System.Diagnostics.Stopwatch Watch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                WriteServerMessageType(RfbProtocol.FRAMEBUFFER_UPDATE);
-                writer.Write((byte)0);//WritePadding(1);
+                WriteServerMessageType(RfbProtocol.ServerMessages.FRAMEBUFFER_UPDATE);
+                WritePadding(1);
                 writer.Write(Convert.ToUInt16(arrRectangles.Length));
 
                 foreach (EncodedRectangle e in arrRectangles)
                     e.WriteData();
-
                 writer.Flush();
+
                 Watch.Stop();
                 Console.WriteLine("Sending took: " + Watch.Elapsed);
-                /*
-                //using (MemoryStream ms = new MemoryStream())
-                //{
-                    //using (BinaryWriter bw = new BigEndianBinaryWriter(ms))
-                    //{
-                        //SocketError error = SocketError.AccessDenied;
-
-                        bw.Write((byte)RfbProtocol.FRAMEBUFFER_UPDATE);
-                        bw.Write((byte)0);
-                        bw.Write(Convert.ToUInt16(arrRectangles.Length));
-                        foreach (EncodedRectangle e in arrRectangles)
-                            bw.Write(e.WriteStream());
-                        //bw.Flush();
-                    //}
-
-                    //byte[] sendData = ms.ToArray();
-                    //Console.WriteLine("Send data size (outside): " + sendData.Length);
-                    //System.Windows.Forms.MessageBox.Show("OK");
-                    //writer.Write(sendData, 0, sendData.Length);
-                    writer.Flush();
-                    
-                //}
-                */
             }
             catch (IOException ex)
             {
@@ -890,7 +707,7 @@ namespace NVNC
 
                 //Do KeyEvent
                 //new Thread(delegate() { 
-                Robot.KeyEvent(pressed, (int)keysym);
+                Robot.KeyEvent(pressed, Convert.ToInt32(keysym));
                 //}).Start();
             }
             catch (IOException ex)
@@ -911,7 +728,9 @@ namespace NVNC
                 byte buttonMask = reader.ReadByte();
                 ushort X = reader.ReadUInt16();
                 ushort Y = reader.ReadUInt16();
-                /*new Thread(delegate() { */ Robot.PointerEvent(buttonMask, X, Y); /*}).Start();*/
+                /*new Thread(delegate() { */ 
+                Robot.PointerEvent(buttonMask, X, Y);
+                /*}).Start();*/
             }
             catch (IOException ex)
             {
@@ -929,7 +748,8 @@ namespace NVNC
             try
             {
                 ReadPadding(3);
-                int len = (int)reader.ReadUInt32();
+
+                int len = Convert.ToInt32(reader.ReadUInt32());
                 string text = GetString(reader.ReadBytes(len));
                 CutText = text;
                 System.Windows.Forms.Clipboard.SetDataObject(text.Replace("\n", Environment.NewLine), true);
@@ -946,28 +766,28 @@ namespace NVNC
         /// Reads the type of message being sent by the client--all messages are prefixed with a message type.
         /// </summary>
         /// <returns>Returns the message type as an integer.</returns>
-        public int ReadServerMessageType()
+        public ClientMessages ReadServerMessageType()
         {
-            int x = 0;
+            byte x = 0;
             try
             {
-                x = (int)reader.ReadByte();
-                return x;
+                x = Convert.ToByte((int)reader.ReadByte());
+                return (ClientMessages)x;
             }
             catch (IOException ex)
             {
                 Console.WriteLine(ex.Message);
                 this.Close();
             }
-            return x;
+            return (ClientMessages)x;
         }
 
         /// <summary>
         /// Writes the type of message being sent to the client--all messages are prefixed with a message type.
         /// </summary>
-        public void WriteServerMessageType(int paramInt)
+        private void WriteServerMessageType(RfbProtocol.ServerMessages message)
         {
-            try { writer.Write((byte)paramInt); }
+            try { writer.Write(Convert.ToByte(message)); }
             catch (IOException ex)
             {
                 Console.WriteLine(ex.Message);
@@ -976,18 +796,7 @@ namespace NVNC
             }
         }
 
-        public void WriteServerMessageType(byte paramInt)
-        {
-            try { writer.Write(paramInt); }
-            catch (IOException ex)
-            {
-                Console.WriteLine(ex.Message);
-                this.Close();
-                return;
-            }
-        }
-
-        // TODO: this colour map code should probably go in Framebuffer.cs
+        // TODO: this color map code should probably go in Framebuffer.cs
         private ushort[,] mapEntries = new ushort[256, 3];
         public ushort[,] MapEntries
         {
@@ -998,9 +807,9 @@ namespace NVNC
         }
 
         /// <summary>
-        /// Reads 8-bit RGB colour values (or updated values) into the colour map.
+        /// Reads 8-bit RGB color values (or updated values) into the color map.
         /// </summary>
-        public void ReadColourMapEntry()
+        public void ReadColorMapEntry()
         {
             ReadPadding(1);
             ushort firstColor = ReadUInt16();
@@ -1015,13 +824,13 @@ namespace NVNC
         }
 
         /// <summary>
-        /// Writes 8-bit RGB colour values (or updated values) from the colour map.
+        /// Writes 8-bit RGB color values (or updated values) from the color map.
         /// </summary>
-        public void WriteColourMapEntry(ushort firstColor, System.Drawing.Color[] colors)
+        public void WriteColorMapEntry(ushort firstColor, System.Drawing.Color[] colors)
         {
             try
             {
-                WriteServerMessageType(1);
+                WriteServerMessageType(ServerMessages.SET_COLOR_MAP_ENTRIES);
 
                 WritePadding(1);
                 writer.Write(firstColor);
@@ -1050,8 +859,9 @@ namespace NVNC
         {
             try
             {
-                WriteServerMessageType(3);
+                WriteServerMessageType(ServerMessages.SERVER_CUT_TEXT);
                 WritePadding(3);
+
                 writer.Write((uint)text.Length);
                 writer.Write(GetBytes(text));
                 writer.Flush();
@@ -1114,7 +924,7 @@ namespace NVNC
         }
 
         /// <summary>
-        /// Writes a single UInt16 value to the server, taking care of Little- to Big-Endian conversion.
+        /// Writes a single unsigned short value to the server, taking care of Little- to Big-Endian conversion.
         /// </summary>
         /// <param name="value">The UInt16 value to be written.</param>
         public void WriteUInt16(ushort value)
@@ -1123,12 +933,29 @@ namespace NVNC
         }
 
         /// <summary>
+        /// Writes a single unsigned integer value to the server, taking care of Little-to Big-Endian conversion.
+        /// </summary>
+        /// <param name="value">The UInt32 value to be written.</param>
+        public void WriteUInt32(uint value)
+        {
+            writer.Write(value);
+        }
+        /// <summary>
         /// Writes a single Byte value to the server.
         /// </summary>
         /// <param name="value">The UInt32 value to be written.</param>
         public void WriteByte(byte value)
         {
             writer.Write(value);
+        }
+
+        /// <summary>
+        /// Writes a byte array to the server.
+        /// </summary>
+        /// <param name="value">The byte array to be written.</param>
+        public void Write(byte[] buffer)
+        {
+            writer.Write(buffer);
         }
 
         /// <summary>

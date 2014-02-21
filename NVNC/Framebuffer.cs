@@ -17,7 +17,6 @@
 
 using System;
 using System.Drawing;
-using System.ComponentModel;
 namespace NVNC
 {
     /// <summary>
@@ -30,7 +29,7 @@ namespace NVNC
         private int bpp;
         private int depth;
         private bool bigEndian;
-        private bool trueColour;
+        private bool trueColor;
         private int redMax;
         private int greenMax;
         private int blueMax;
@@ -111,7 +110,6 @@ namespace NVNC
         /// <summary>
         /// The number of Bits Per Pixel for the Framebuffer--one of 8, 24, or 32.
         /// </summary>
-        [DefaultValue(32)]
         public int BitsPerPixel
         {
             get
@@ -127,9 +125,9 @@ namespace NVNC
         }
 
         /// <summary>
-        /// The Colour Depth of the Framebuffer.
+        /// The Color Depth of the Framebuffer.
+        /// The default value is 24.
         /// </summary>
-        [DefaultValue(24)]
         public int Depth
         {
             get
@@ -158,25 +156,25 @@ namespace NVNC
         }
 
         /// <summary>
-        /// Indicates whether the remote host supports True Colour.
+        /// Indicates whether the remote host supports True Color.
+        /// The default value is true.
         /// </summary>
-        [DefaultValue(true)]
-        public bool TrueColour
+        public bool TrueColor
         {
             get
             {
-                return trueColour;
+                return trueColor;
             }
             set
             {
-                trueColour = value;
+                trueColor = value;
             }
         }
 
         /// <summary>
-        /// The maximum value for Red in a pixel's colour value.
+        /// The maximum value for Red in a pixel's color value.
+        /// The default value is 0xFF.
         /// </summary>
-        [DefaultValue(0xFF)]
         public int RedMax
         {
             get
@@ -190,9 +188,9 @@ namespace NVNC
         }
 
         /// <summary>
-        /// The maximum value for Green in a pixel's colour value.
+        /// The maximum value for Green in a pixel's color value.
+        /// The default value is 0xFF.
         /// </summary>
-        [DefaultValue(0xFF)]
         public int GreenMax
         {
             get
@@ -206,9 +204,9 @@ namespace NVNC
         }
 
         /// <summary>
-        /// The maximum value for Blue in a pixel's colour value.
+        /// The maximum value for Blue in a pixel's color value.
+        /// The default value is 0xFF.
         /// </summary>
-        [DefaultValue(0xFF)]
         public int BlueMax
         {
             get
@@ -223,8 +221,8 @@ namespace NVNC
 
         /// <summary>
         /// The number of bits to shift pixel values in order to obtain Red values.
+        /// The default value is 16.
         /// </summary>
-        [DefaultValue(16)]
         public int RedShift
         {
             get
@@ -239,8 +237,8 @@ namespace NVNC
 
         /// <summary>
         /// The number of bits to shift pixel values in order to obtain Green values.
+        /// The default value is 8.
         /// </summary>
-        [DefaultValue(8)]
         public int GreenShift
         {
             get
@@ -255,8 +253,8 @@ namespace NVNC
 
         /// <summary>
         /// The number of bits to shift pixel values in order to obtain Blue values.
+        /// The default value is 0.
         /// </summary>
-        [DefaultValue(0)]
         public int BlueShift
         {
             get
@@ -295,19 +293,19 @@ namespace NVNC
         {
             byte[] b = new byte[16];
 
-            b[0] = (byte)bpp;
-            b[1] = (byte)depth;
-            b[2] = (byte)(bigEndian ? 1 : 0);
-            b[3] = (byte)(trueColour ? 1 : 0);
-            b[4] = (byte)((redMax >> 8) & 0xff);
-            b[5] = (byte)(redMax & 0xff);
-            b[6] = (byte)((greenMax >> 8) & 0xff);
-            b[7] = (byte)(greenMax & 0xff);
-            b[8] = (byte)((blueMax >> 8) & 0xff);
-            b[9] = (byte)(blueMax & 0xff);
-            b[10] = (byte)redShift;
-            b[11] = (byte)greenShift;
-            b[12] = (byte)blueShift;
+            b[0] = Convert.ToByte(bpp);
+            b[1] = Convert.ToByte(depth);
+            b[2] = Convert.ToByte(bigEndian ? 1 : 0);
+            b[3] = Convert.ToByte(trueColor ? 1 : 0);
+            b[4] = Convert.ToByte((redMax >> 8) & 0xff);
+            b[5] = Convert.ToByte(redMax & 0xff);
+            b[6] = Convert.ToByte((greenMax >> 8) & 0xff);
+            b[7] = Convert.ToByte(greenMax & 0xff);
+            b[8] = Convert.ToByte((blueMax >> 8) & 0xff);
+            b[9] = Convert.ToByte(blueMax & 0xff);
+            b[10] = Convert.ToByte(redShift);
+            b[11] = Convert.ToByte(greenShift);
+            b[12] = Convert.ToByte(blueShift);
             // plus 3 bytes padding = 16 bytes
 
             return b;
@@ -327,26 +325,29 @@ namespace NVNC
 
             Framebuffer buffer = new Framebuffer(width, height);
 
-            buffer.BitsPerPixel = (int)b[0];
-            buffer.Depth = (int)b[1];
+            buffer.BitsPerPixel = Convert.ToInt32(b[0]);
+            buffer.Depth = Convert.ToInt32(b[1]);
             buffer.BigEndian = (b[2] != 0);
-            buffer.TrueColour = (b[3] != 0);
-            buffer.RedMax = (int)(b[5] | b[4] << 8);
-            buffer.GreenMax = (int)(b[7] | b[6] << 8);
-            buffer.BlueMax = (int)(b[9] | b[8] << 8);
-            buffer.RedShift = (int)b[10];
-            buffer.GreenShift = (int)b[11];
-            buffer.BlueShift = (int)b[12];
+            buffer.TrueColor = (b[3] != 0);
+            buffer.RedMax = Convert.ToInt32(b[5] | b[4] << 8);
+            buffer.GreenMax = Convert.ToInt32(b[7] | b[6] << 8);
+            buffer.BlueMax = Convert.ToInt32(b[9] | b[8] << 8);
+            buffer.RedShift = Convert.ToInt32(b[10]);
+            buffer.GreenShift = Convert.ToInt32(b[11]);
+            buffer.BlueShift = Convert.ToInt32(b[12]);
             // Last 3 bytes are padding, ignore									
 
             return buffer;
         }
+        /// <summary>
+        /// Prints the Framebuffer data to the console.
+        /// </summary>
         public void Print()
         {
             Console.WriteLine("BitsPerPixel: " + this.BitsPerPixel);
             Console.WriteLine("Depth: " + this.Depth);
             Console.WriteLine("BigEndian: " + this.BigEndian);
-            Console.WriteLine("TrueColor: " + this.TrueColour);
+            Console.WriteLine("TrueColor: " + this.TrueColor);
             Console.WriteLine("RedMax: " + this.RedMax);
             Console.WriteLine("GreenMax: " + this.GreenMax);
             Console.WriteLine("BlueMax: " + this.BlueMax);
