@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("[CSharp]NVNC")]
+[assembly: AssemblyTitle("Example NVNC Server")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("TitanSoft")]
-[assembly: AssemblyProduct("[CSharp]NVNC")]
-[assembly: AssemblyCopyright("Copyright © TitanSoft 2012")]
+[assembly: AssemblyCompany("TitanTech")]
+[assembly: AssemblyProduct("NVNC")]
+[assembly: AssemblyCopyright("Copyright © TitanTech 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

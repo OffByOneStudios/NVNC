@@ -1,7 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "[CSharp]NVNC", "[CSharp]NVNC\[CSharp]NVNC.csproj", "{85F771AA-820C-4C1A-80D7-CD437F932B8A}"
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30110.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NVNC Example", "[CSharp]NVNC\NVNC Example.csproj", "{85F771AA-820C-4C1A-80D7-CD437F932B8A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NVNC", "NVNC\NVNC.csproj", "{A749DE42-B732-4541-86BE-2FF3CBCB5EC4}"
 EndProject

@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("TitanTech")]
 [assembly: AssemblyProduct("NVNC")]
-[assembly: AssemblyCopyright("Copyright © TitanSoft 2014")]
+[assembly: AssemblyCopyright("Copyright © TitanTech 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
