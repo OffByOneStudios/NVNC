@@ -1,5 +1,5 @@
 // NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -128,9 +128,9 @@ namespace NVNC.Encodings
         public override void WriteData()
         {
             base.WriteData();
-            pwriter.Write(Convert.ToUInt32(RfbProtocol.Encoding.RRE_ENCODING));
-            pwriter.Write(Convert.ToUInt32(subrects.Length));
-            pwriter.WritePixel(bgpixel);
+            writer.Write(Convert.ToUInt32(RfbProtocol.Encoding.RRE_ENCODING));
+            writer.Write(Convert.ToUInt32(subrects.Length));
+            WritePixel32(bgpixel);
 
 
             Console.WriteLine(subrects.Length);
@@ -153,7 +153,7 @@ namespace NVNC.Encodings
                     ms.Write(w, 0, w.Length);
                     ms.Write(h, 0, h.Length);
                 }
-                pwriter.Write(ms.ToArray());
+                writer.Write(ms.ToArray());
             }
 
             Watch.Stop();

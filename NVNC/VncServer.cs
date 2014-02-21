@@ -1,5 +1,5 @@
 ﻿// NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 using System;
 using System.Drawing;
 using System.Threading;
+using System.IO;
 
 namespace NVNC
 {
@@ -53,7 +54,6 @@ namespace NVNC
                 _password = value;
             }
         }
-
         private string _name;
         public string Name
         {
@@ -73,8 +73,9 @@ namespace NVNC
             fb = new Framebuffer(screenSize.Width, screenSize.Height);
 
             fb.BitsPerPixel = 32;
-            fb.Depth = 32;
+            fb.Depth = 24;
             fb.BigEndian = true;
+            fb.TrueColour = true;
             fb.RedShift = 16;
             fb.GreenShift = 8;
             fb.BlueShift = 0;
@@ -86,6 +87,9 @@ namespace NVNC
             fb = new Framebuffer(screenSize.Width, screenSize.Height);
 
             fb.BitsPerPixel = 32;
+            fb.Depth = 24;
+            //fb.BigEndian = true;
+            fb.TrueColour = true;
             fb.RedShift = 16;
             fb.GreenShift = 8;
             fb.BlueShift = 0;
@@ -105,24 +109,15 @@ namespace NVNC
         }
         private void start()
         {
-            try
-            {
-                if (String.IsNullOrEmpty(Name))
-                    throw new ArgumentNullException("Name", "The VNC Server Name cannot be empty.");
-                if (Port == 0)
-                    throw new ArgumentNullException("Port", "The VNC Server port cannot be zero.");
-            }
-            catch (ArgumentNullException ex)
-            {
-                Console.WriteLine(ex.Message);
-                return;
-            }
-
+            if (String.IsNullOrEmpty(Name))
+                throw new ArgumentNullException("Name", "The VNC Server Name cannot be empty.");
+            if (Port == 0)
+                throw new ArgumentNullException("Port", "The VNC Server port cannot be zero.");
             Console.WriteLine("Started VNC Server at port: " + Port);
 
             fb.DesktopName = Name;
             host = new RfbProtocol(Port, Name);
-            
+
             host.WriteProtocolVersion();
             Console.WriteLine("Wrote Protocol Version");
 
@@ -145,7 +140,7 @@ namespace NVNC
 
                 Console.WriteLine("Server name: " + fb.DesktopName);
                 host.WriteServerInit(this.fb);
-                
+
                 //RobotClient r = new RobotClient(host);
                 //r.defaultPixel = fb;
 
@@ -157,12 +152,17 @@ namespace NVNC
                     {
                         case 0:
                             Console.WriteLine("Read SetPixelFormat");
-                            Framebuffer f = host.ReadSetPixelFormat();
+                            //Console.WriteLine("Before SPF:");
+                            //fb.Print();
+                            Framebuffer f = host.ReadSetPixelFormat(fb.Width, fb.Height);
+                            if (f != null)
+                                fb = f;
+                            //Console.WriteLine("\nAfter SPF:");
+                            //fb.Print();
                             break;
                         case 1:
                             Console.WriteLine("Read ReadColourMapEntry");
                             host.ReadColourMapEntry();
-                            //readFixColourMapEntries();
                             break;
                         case 2:
                             Console.WriteLine("Read SetEncodings");

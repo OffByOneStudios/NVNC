@@ -1,5 +1,5 @@
 // NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,8 +36,8 @@ namespace NVNC.Encodings
         public override void Encode()
         {
             //source = new Point();
-            pwriter.Write((ushort)rectangle.X);
-            pwriter.Write((ushort)rectangle.Y);
+            writer.Write((ushort)rectangle.X);
+            writer.Write((ushort)rectangle.Y);
         }
     }
 }

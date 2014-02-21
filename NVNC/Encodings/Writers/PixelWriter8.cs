@@ -25,11 +25,9 @@ namespace NVNC.Encodings
     {
         private RfbProtocol rfb = null;
 
-        public PixelWriter8(BinaryWriter reader, Framebuffer framebuffer, RfbProtocol rfb)
+        public PixelWriter8(BinaryWriter reader, Framebuffer framebuffer)
             : base(reader, framebuffer)
-        {
-            this.rfb = rfb;
-        }
+        { }
 
         /// <summary>
         /// Writes an 8-bit pixel.

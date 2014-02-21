@@ -1,5 +1,5 @@
 ﻿// NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,22 +36,22 @@ namespace NVNC.Encodings
         public override void WriteData()
         {
             System.Diagnostics.Stopwatch Watch = System.Diagnostics.Stopwatch.StartNew();
-            pwriter.Write(Convert.ToUInt16(rectangle.X));
-            pwriter.Write(Convert.ToUInt16(rectangle.Y));
-            pwriter.Write(Convert.ToUInt16(rectangle.Width));
-            pwriter.Write(Convert.ToUInt16(rectangle.Height));
+            writer.Write(Convert.ToUInt16(rectangle.X));
+            writer.Write(Convert.ToUInt16(rectangle.Y));
+            writer.Write(Convert.ToUInt16(rectangle.Width));
+            writer.Write(Convert.ToUInt16(rectangle.Height));
 
-            pwriter.Write(Convert.ToUInt32(RfbProtocol.Encoding.CORRE_ENCODING));
-            pwriter.Write(Convert.ToUInt32(this.subrects.Length));
+            writer.Write(Convert.ToUInt32(RfbProtocol.Encoding.CORRE_ENCODING));
+            writer.Write(Convert.ToUInt32(this.subrects.Length));
 
-            pwriter.WritePixel(this.bgpixel);
+            WritePixel32(this.bgpixel);
             for (int i = 0; i < this.subrects.Length; i++)
             {
-                pwriter.WritePixel(this.subrects[i].pixel);
-                pwriter.Write((byte)this.subrects[i].x);
-                pwriter.Write((byte)this.subrects[i].y);
-                pwriter.Write((byte)this.subrects[i].w);
-                pwriter.Write((byte)this.subrects[i].h);
+                WritePixel32(this.subrects[i].pixel);
+                writer.Write((byte)this.subrects[i].x);
+                writer.Write((byte)this.subrects[i].y);
+                writer.Write((byte)this.subrects[i].w);
+                writer.Write((byte)this.subrects[i].h);
             }
             Watch.Stop();
             Console.WriteLine("GOTOVO! " + Watch.Elapsed);

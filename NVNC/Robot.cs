@@ -1,5 +1,5 @@
 ﻿// NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -676,58 +676,67 @@ namespace NVNC
                     default: return 0;
                 }
             }
-            public static KeyCode toVKCode(int paramInt)
+            public static KeyCode toVKCode(int key)
             {
+
                 KeyCode localKeyCode = null;
-                bool chk = false;
+                bool chk = false, altgr = false;
                 int i = 0;
-                if ((paramInt >= 65) && (paramInt <= 90))
+                Console.WriteLine(key);
+                if ((key >= 65) && (key <= 90))
                 {
-                    i = paramInt;
+                    i = key;
                     chk = true;
                 }
-                else if ((paramInt >= 48) && (paramInt <= 57))
+                else if ((key >= 48) && (key <= 57))
                 {
-                    i = paramInt;
+                    i = key;
                 }
-                else if ((paramInt >= 97) && (paramInt <= 122))
+                else if ((key >= 97) && (key <= 122))
                 {
-                    i = paramInt - 97 + 65;
+                    i = key - 97 + 65;
+                    chk = true;
+                }
+                else if (((key == 32)) || ((key >= 58) && (key <= 64)) || (key == 8364) || ((key >= 65360) && (key <= 65367)) || (key == 65535))
+                {
+                    i = key;
+                    chk = true;
+                }
+                else if (((key >= 91) && (key <= 93)) || (key == 95) || (key == 96))
+                {
+                    i = key;
+                    chk = true;
+                }
+                else if ((key >= 126) && (key <= 255))
+                {
+                    i = key;
+                    chk = true;
+                }
+                else if ((key == 65507))
+                {
+                    altgr = !altgr;
+                    if (altgr)
+                    {
+                        i = key;
+                        chk = true;
+                    }
+
                 }
                 else
                 {
-                    switch (paramInt)
+                    Console.WriteLine(key);
+                    switch (key)
                     {
-                        case 60:
-                            i = 44;
-                            chk = true;
-                            break;
-                        case 62:
-                            i = 46;
-                            chk = true;
-                            break;
-                        case 63:
-                            i = 47;
-                            chk = true;
-                            break;
-                        case 58:
-                            i = 59;
-                            chk = true;
-                            break;
-                        case 34:
-                            i = 222;
-                            chk = true;
-                            break;
                         case 33:
                             i = 49;
                             chk = true;
                             break;
-                        case 64:
+                        case 34:
                             i = 50;
                             chk = true;
                             break;
                         case 35:
-                            i = 51;
+                            i = 35;
                             chk = true;
                             break;
                         case 36:
@@ -739,43 +748,127 @@ namespace NVNC
                             chk = true;
                             break;
                         case 38:
-                            i = 55;
-                            chk = true;
-                            break;
-                        case 94:
                             i = 54;
                             chk = true;
                             break;
+                        case 39:
+                            i = 39;
+                            chk = true;
+                            break;
                         case 40:
-                            i = 57;
-                            chk = true;
-                            break;
-                        case 41:
-                            i = 48;
-                            chk = true;
-                            break;
-                        case 42:
                             i = 56;
                             chk = true;
                             break;
+                        case 41:
+                            i = 57;
+                            chk = true;
+                            break;
+                        case 42:
+                            i = 42;
+                            chk = true;
+                            break;
                         case 43:
+                            i = (int)_KeyEvent.VK_OEM_PLUS;
+                            chk = true;
+                            break;
+                        case 44:
+                            i = 44;
+                            chk = true;
+                            break;
+                        case 45:
+                            i = 45;
+                            chk = true;
+                            break;
+                        case 46:
+                            i = 46;
+                            chk = true;
+                            break;
+                        case 47:
+                            i = 47;
+                            chk = true;
+                            break;
+                        case 58:
+                            i = 58;
+                            chk = true;
+                            break;
+                        case 59:
+                            i = 59;
+                            chk = true;
+                            break;
+                        case 60:
+                            i = 60;
+                            chk = true;
+                            break;
+                        case 61:
                             i = 61;
                             chk = true;
                             break;
-                        case 95:
-                            i = 45;
+                        case 62:
+                            i = 62;
                             chk = true;
+                            break;
+                        case 63:
+                            i = 63;
+                            chk = true;
+                            break;
+                        case 94:
+                            i = 94;
+                            chk = false;
                             break;
                         case 123:
                             i = 91;
                             chk = true;
                             break;
+                        case 124:
+                            i = 124;
+                            chk = false;
+                            break;
                         case 125:
                             i = 93;
                             chk = true;
                             break;
+                        case 65429:
+                            i = (int)_KeyEvent.VK_NUMPAD7;
+                            chk = true;
+                            break;
+                        case 65430:
+                            i = (int)_KeyEvent.VK_NUMPAD4;
+                            chk = true;
+                            break;
+                        case 65431:
+                            i = (int)_KeyEvent.VK_NUMPAD8;
+                            chk = true;
+                            break;
+                        case 65432:
+                            i = (int)_KeyEvent.VK_NUMPAD6;
+                            chk = true;
+                            break;
+                        case 65433:
+                            i = (int)_KeyEvent.VK_NUMPAD2;
+                            chk = true;
+                            break;
+                        case 65434:
+                            i = (int)_KeyEvent.VK_NUMPAD9;
+                            chk = true;
+                            break;
+                        case 65435:
+                            i = (int)_KeyEvent.VK_NUMPAD3;
+                            chk = true;
+                            break;
+                        case 65436:
+                            i = (int)_KeyEvent.VK_NUMPAD1;
+                            chk = true;
+                            break;
+                        case 65437:
+                            i = (int)_KeyEvent.VK_NUMPAD5;
+                            chk = true;
+                            break;
+                        case 65438:
+                            i = (int)_KeyEvent.VK_NUMPAD0;
+                            chk = true;
+                            break;
                         default:
-                            i = toVKall(paramInt);
+                            i = toVKall(key);
                             break;
                     }
                 }
@@ -806,7 +899,7 @@ namespace NVNC
             }
             public static string vkToString(int vk)
             {
-
+                Console.WriteLine(vk);
                 char[] c = new char[1];
                 if (vk >= '0' && vk <= '9')
                 {
@@ -818,7 +911,352 @@ namespace NVNC
                     c[0] = (char)vk;
                     return new String(c).ToLower();
                 }
+                if (vk == '.')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == ',')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == 'è')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == 'é')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '§')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '+')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '^')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '-')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '_')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == 'ò')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '°')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == 'ì')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '^')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '\\')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '(')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == ')')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '[')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == ']')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '%')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '&')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '#')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '$')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '\'')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '/')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '£')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '€')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == 40)
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == 41)
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == 94)
+                {
+                    return "^";
+                }
+                if (vk == 96)
+                {
+                    c[0] = '`';
+                    return new String(c);
+                }
+                if (vk == 123)
+                {
+                    return "{";
+                }
+                if (vk == 124)
+                {
+                    return "|";
+                }
+                if (vk == 125)
+                {
+                    return "}";
+                }
+                if (vk == 126)
+                {
+                    return "~";
+                }
+                if (vk == 127)
+                {
+                    c[0] = '⌂';
+                    return new String(c);
+                }
+                if (vk == 128)
+                {
+                    c[0] = 'Ç';
+                    return new String(c);
+                }
+                if (vk == 129)
+                {
+                    c[0] = 'ü';
+                    return new String(c);
+                }
+                if (vk == 130)
+                {
+                    c[0] = 'é';
+                    return new String(c);
+                }
+                if (vk == 131)
+                {
+                    c[0] = 'â';
+                    return new String(c);
+                }
+                if (vk == 132)
+                {
+                    c[0] = 'ä';
+                    return new String(c);
+                }
+                if (vk == 133)
+                {
+                    c[0] = 'à';
+                    return new String(c);
+                }
+                if (vk == 134)
+                {
+                    c[0] = 'å';
+                    return new String(c);
+                }
+                if (vk == 135)
+                {
+                    c[0] = 'ç';
+                    return new String(c);
+                }
+                if (vk == 136)
+                {
+                    c[0] = 'ê';
+                    return new String(c);
+                }
+                if (vk == 137)
+                {
+                    c[0] = 'ë';
+                    return new String(c);
+                }
+                if (vk == 138)
+                {
+                    c[0] = 'è';
+                    return new String(c);
+                }
+                if (vk == 139)
+                {
+                    c[0] = 'ï';
+                    return new String(c);
+                }
+                if (vk == 140)
+                {
+                    c[0] = 'î';
+                    return new String(c);
+                }
+                if (vk == 141)
+                {
+                    c[0] = 'ì';
+                    return new String(c);
+                }
+                if (vk == 142)
+                {
+                    c[0] = 'Ä';
+                    return new String(c);
+                }
+                if (vk == 143)
+                {
+                    c[0] = 'Å';
+                    return new String(c);
+                }
+                if (vk == 144)
+                {
+                    c[0] = 'É';
+                    return new String(c);
+                }
+                if (vk == 145)
+                {
+                    c[0] = 'æ';
+                    return new String(c);
+                }
+                if (vk == 146)
+                {
+                    c[0] = 'Æ';
+                    return new String(c);
+                }
+                if (vk == 147)
+                {
+                    c[0] = 'ô';
+                    return new String(c);
+                }
+                if (vk == 148)
+                {
+                    c[0] = 'ö';
+                    return new String(c);
+                }
+                if (vk == 149)
+                {
+                    c[0] = 'ò';
+                    return new String(c);
+                }
+                if (vk == 150)
+                {
+                    c[0] = 'û';
+                    return new String(c);
+                }
+                 if (vk == '!')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '+')
+                {
+                    c[0] = (char)vk;
+                    return "+";
+                }
+                if (vk == 32)
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
+                if (vk == '\"')
+                {
+                    c[0] = (char)vk;
+                    return new String(c);
+                }
 
+                if (vk == 65360)
+                {
+                    vk = (int)_KeyEvent.VK_HOME;
+                }
+                if (vk == 65361)
+                {
+                    vk = (int)_KeyEvent.VK_LEFT; 
+                }
+                if (vk == 65363)
+                {
+                    vk = (int)_KeyEvent.VK_RIGHT; 
+                }
+                if (vk == 65362)
+                {
+                    vk = (int)_KeyEvent.VK_UP; 
+                }
+                if (vk == 65364)
+                {
+                    vk = (int)_KeyEvent.VK_DOWN;
+                }
+                if (vk == 65365)
+                {
+                    vk = (int)_KeyEvent.VK_PRIOR;
+                }
+                if (vk == 65366)
+                {
+                    vk = (int)_KeyEvent.VK_NEXT;
+                }
+                if (vk == 65367)
+                {
+                    vk = (int)_KeyEvent.VK_END;
+                }
+                if (vk == 65293)
+                {
+                    vk = (int)_KeyEvent.VK_RETURN; 
+                }
+                if (vk == 65535)
+                {
+                    vk = (int)_KeyEvent.VK_DELETE;
+                }
                 switch (vk)
                 {
                     case (int)_KeyEvent.VK_TAB:
@@ -959,27 +1397,6 @@ namespace NVNC
                         return "{NUMLOCK}";
                     case (int)_KeyEvent.VK_SCROLL:
                         return "{SCROLLLOCK}";
-
-                    /*
-                    caseStringify(VK_BROWSER_BACK);
-                    caseStringify(VK_BROWSER_FORWARD);
-                    caseStringify(VK_BROWSER_REFRESH);
-                    caseStringify(VK_BROWSER_STOP);
-                    caseStringify(VK_BROWSER_SEARCH);
-                    caseStringify(VK_BROWSER_FAVORITES);
-                    caseStringify(VK_BROWSER_HOME); 
-                    caseStringify(VK_VOLUME_MUTE);
-                    caseStringify(VK_VOLUME_DOWN);
-                    caseStringify(VK_VOLUME_UP);
-                    caseStringify(VK_MEDIA_NEXT_TRACK);
-                    caseStringify(VK_MEDIA_PREV_TRACK);
-                    caseStringify(VK_MEDIA_STOP);
-                    caseStringify(VK_MEDIA_PLAY_PAUSE);
-                    caseStringify(VK_LAUNCH_MAIL);
-                    caseStringify(VK_LAUNCH_MEDIA_SELECT);
-                    caseStringify(VK_LAUNCH_APP1);
-                    caseStringify(VK_LAUNCH_APP2);
-                    */
                     case (int)_KeyEvent.VK_OEM_PLUS:
                         return "{+}";
                     case (int)_KeyEvent.VK_OEM_MINUS:
@@ -988,7 +1405,6 @@ namespace NVNC
                         return ",";
                     case (int)_KeyEvent.VK_OEM_PERIOD:
                         return ".";
-
                     case (int)_KeyEvent.VK_OEM_2:
                         return "{DIVIDE}"; //or ?
                     case (int)_KeyEvent.VK_OEM_3:

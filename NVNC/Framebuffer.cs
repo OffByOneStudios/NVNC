@@ -25,24 +25,24 @@ namespace NVNC
     /// </summary>
     public class Framebuffer
     {
-        string name;
+        private string name;
 
-        int bpp;
-        int depth;
-        bool bigEndian;
-        bool trueColour;
-        int redMax;
-        int greenMax;
-        int blueMax;
-        int redShift;
-        int greenShift;
-        int blueShift;
+        private int bpp;
+        private int depth;
+        private bool bigEndian;
+        private bool trueColour;
+        private int redMax;
+        private int greenMax;
+        private int blueMax;
+        private int redShift;
+        private int greenShift;
+        private int blueShift;
 
-        readonly int width;
-        readonly int height;
+        private readonly int width;
+        private readonly int height;
         public readonly int[] pixels;	 // I'm reusing the same pixel buffer for all update rectangles.
         // Pixel values will always be 32-bits to match GDI representation
-        readonly int pixelCount; // The total number of pixels (w x h) assigned in SetSize()
+        private readonly int pixelCount; // The total number of pixels (w x h) assigned in SetSize()
 
 
         /// <summary>
@@ -120,13 +120,16 @@ namespace NVNC
             }
             set
             {
-                bpp = value;
+                if (value == 32 || value == 16 || value == 8)
+                    bpp = value;
+                else throw new ArgumentException("Wrong value for BitsPerPixel");
             }
         }
 
         /// <summary>
         /// The Colour Depth of the Framebuffer.
         /// </summary>
+        [DefaultValue(24)]
         public int Depth
         {
             get
@@ -142,7 +145,6 @@ namespace NVNC
         /// <summary>
         /// Indicates whether the remote host uses Big- or Little-Endian order when sending multi-byte values.
         /// </summary>
-        [DefaultValue(true)]
         public bool BigEndian
         {
             get
@@ -158,6 +160,7 @@ namespace NVNC
         /// <summary>
         /// Indicates whether the remote host supports True Colour.
         /// </summary>
+        [DefaultValue(true)]
         public bool TrueColour
         {
             get
@@ -337,6 +340,19 @@ namespace NVNC
             // Last 3 bytes are padding, ignore									
 
             return buffer;
+        }
+        public void Print()
+        {
+            Console.WriteLine("BitsPerPixel: " + this.BitsPerPixel);
+            Console.WriteLine("Depth: " + this.Depth);
+            Console.WriteLine("BigEndian: " + this.BigEndian);
+            Console.WriteLine("TrueColor: " + this.TrueColour);
+            Console.WriteLine("RedMax: " + this.RedMax);
+            Console.WriteLine("GreenMax: " + this.GreenMax);
+            Console.WriteLine("BlueMax: " + this.BlueMax);
+            Console.WriteLine("RedShift: " + this.RedShift);
+            Console.WriteLine("GreenShift: " + this.GreenShift);
+            Console.WriteLine("BlueShift: " + this.BlueShift);
         }
 
         public int TranslatePixel(int pixel)

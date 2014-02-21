@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("NVNC")]
-[assembly: AssemblyDescription("A lightweight .NET VNC Server")]
+[assembly: AssemblyDescription("A free and open source .NET VNC Server")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("T!T@N")]
+[assembly: AssemblyCompany("TitanTech")]
 [assembly: AssemblyProduct("NVNC")]
-[assembly: AssemblyCopyright("Copyright © TitanSoft 2012")]
+[assembly: AssemblyCopyright("Copyright © TitanSoft 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("5f0bb488-5019-4497-84f2-2ecc77d11d33")]
+[assembly: Guid("1c222726-988f-4c04-a7a1-905b06c613a2")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -29,8 +29,5 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-// You can specify all the values or you can default the Build and Revision Numbers 
-// by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.5.0.0")]
+[assembly: AssemblyFileVersion("1.5.0.0")]

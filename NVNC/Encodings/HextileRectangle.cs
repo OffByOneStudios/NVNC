@@ -1,5 +1,5 @@
 // NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -252,8 +252,9 @@ namespace NVNC.Encodings
         public override void WriteData()
         {
             base.WriteData();
-            pwriter.Write(Convert.ToUInt32(RfbProtocol.Encoding.HEXTILE_ENCODING));
-
+            writer.Write(Convert.ToUInt32(RfbProtocol.Encoding.HEXTILE_ENCODING));
+            
+            
             Tile tile;
             int mask;
             int oldBgpixel = 0x10000000;
@@ -359,10 +360,131 @@ namespace NVNC.Encodings
                         //pwriter.Write((byte[])tiles[i]);
                     }
                 }
-                pwriter.Write(ms.ToArray());
+                writer.Write(ms.ToArray());
             }
             Watch.Stop();
             Console.WriteLine("GOTOVO! " + Watch.Elapsed);
         }
+        /*
+        public override byte[] WriteStream()
+        {
+            System.Diagnostics.Stopwatch Watch = System.Diagnostics.Stopwatch.StartNew();
+            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            {
+                using (BigEndianBinaryWriter bw = new BigEndianBinaryWriter(ms))
+                {
+                    bw.Write(base.WriteStream());
+                    bw.Write(Convert.ToUInt32(RfbProtocol.Encoding.HEXTILE_ENCODING));
+
+                    Tile tile;
+                    int mask;
+                    int oldBgpixel = 0x10000000;
+                    int fgpixel = 0x10000000;
+                    int j;
+                    byte[] b = new byte[2];
+
+                    //Console.WriteLine("Tiles: " + tiles.Length);
+
+                    //Writing to a MemoryStream is faster, than writing to a NetworkStream, while being read chunk by chunk
+                    //Data is sent fast, when it is sent as one ordered byte array
+
+                    for (int i = 0; i < tiles.Length; i++)
+                    {
+                        if (tiles[i] is Tile)
+                        {
+                            tile = (Tile)tiles[i];
+                            mask = 0;
+
+                            // Do we have subrects?				
+                            if (tile.subrects.Length > 0)
+                            {
+                                // We have subrects
+                                mask |= ANY_SUBRECTS;
+
+                                // Do all subrects have the same pixel?
+                                fgpixel = tile.subrects[0].pixel;
+                                for (j = 1; j < tile.subrects.Length; j++)
+                                {
+                                    if (tile.subrects[j].pixel != fgpixel)
+                                    {
+                                        // Subrects are of varying colours
+                                        mask |= SUBRECTS_COLOURED;
+                                        break;
+                                    }
+                                }
+
+                                if ((mask & SUBRECTS_COLOURED) == 0)
+                                {
+                                    // All subrects have the same pixel
+                                    mask |= FOREGROUND_SPECIFIED;
+                                }
+                            }
+
+                            // Has the background changed?
+                            if (tile.bgpixel != oldBgpixel)
+                            {
+                                oldBgpixel = tile.bgpixel;
+                                mask |= BACKGROUND_SPECIFIED;
+                            }
+
+                            //pwriter.Write((byte)mask);
+                            bw.Write((byte)mask);
+
+                            // Background pixel
+                            if ((mask & BACKGROUND_SPECIFIED) != 0)
+                            {
+                                byte[] pd = PixelGrabber.GrabBytes(tile.bgpixel, framebuffer);
+                                bw.Write(pd, 0, pd.Length);
+
+                                //pwriter.WritePixel(tile.bgpixel);
+                            }
+
+                            // Foreground pixel
+                            if ((mask & FOREGROUND_SPECIFIED) != 0)
+                            {
+                                byte[] pd = PixelGrabber.GrabBytes(fgpixel, framebuffer);
+                                bw.Write(pd, 0, pd.Length);
+                                //pwriter.WritePixel(fgpixel);
+                            }
+
+                            // Subrects
+                            if ((mask & ANY_SUBRECTS) != 0)
+                            {
+                                bw.Write((byte)tile.subrects.Length);
+                                //pwriter.Write((byte)tile.subrects.Length);
+
+                                //using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                                //{
+                                for (j = 0; j < tile.subrects.Length; j++)
+                                {
+                                    // Subrects coloured
+                                    if ((mask & SUBRECTS_COLOURED) != 0)
+                                    {
+                                        byte[] x = PixelGrabber.GrabBytes(tile.subrects[j].pixel, framebuffer);
+                                        bw.Write(x, 0, x.Length);
+                                    }
+                                    bw.Write((byte)((tile.subrects[j].x << 4) | tile.subrects[j].y));
+                                    bw.Write((byte)(((tile.subrects[j].w - 1) << 4) | (tile.subrects[j].h - 1)));
+                                }
+                                //pwriter.Write(ms.ToArray());
+                                //}
+                            }
+                        }
+                        else
+                        {
+                            bw.Write((byte)RAW);
+                            //pwriter.Write((byte)RAW);
+
+                            bw.Write((byte[])tiles[i], 0, ((byte[])tiles[i]).Length);
+                            //pwriter.Write((byte[])tiles[i]);
+                        }
+                    }
+                }
+                Watch.Stop();
+                Console.WriteLine("GOTOVO! " + Watch.Elapsed);
+                return ms.ToArray();
+            }
+        }
+        */
     }
 }

@@ -1,5 +1,5 @@
 // NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ namespace NVNC.Encodings
         protected RfbProtocol rfb;
         protected Rectangle rectangle;
         protected Framebuffer framebuffer;
-        protected PixelWriter pwriter;
+        protected BinaryWriter writer;
         protected byte[] bytes;
 
         public EncodedRectangle(RfbProtocol rfb, Framebuffer framebuffer, Rectangle rectangle, RfbProtocol.Encoding encoding)
@@ -40,33 +40,33 @@ namespace NVNC.Encodings
             this.rectangle = rectangle;
 
             //Select appropriate writer
-            BinaryWriter writer = /*(encoding == RfbProtocol.ZRLE_ENCODING) ? rfb.ZrleWriter :*/ rfb.Writer;
+            writer = (encoding == RfbProtocol.Encoding.ZRLE_ENCODING || encoding == RfbProtocol.Encoding.ZLIB_ENCODING) ? rfb.ZrleWriter : rfb.Writer;
 
             // Create the appropriate PixelWriter depending on bits per pixel
+            /*
             switch (framebuffer.BitsPerPixel)
             {
                 case 32:
-                    /*
-                    if (encoding == RfbProtocol.ZRLE_ENCODING)
+
+                    if (encoding == RfbProtocol.Encoding.ZRLE_ENCODING)
                     {
                         pwriter = new CPixelWriter(writer, framebuffer);
                     }
                     else
                     {
-                    */
-                    pwriter = new PixelWriter32(writer, framebuffer);
-                    //}
+                        pwriter = new PixelWriter32(writer, framebuffer);
+                    }
                     break;
                 case 16:
                     pwriter = new PixelWriter16(writer, framebuffer);
                     break;
                 case 8:
-                    pwriter = new PixelWriter8(writer, framebuffer, rfb);
+                    pwriter = new PixelWriter8(writer, framebuffer);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException("BitsPerPixel", framebuffer.BitsPerPixel, "Valid VNC Pixel Widths are 8, 16 or 32 bits.");
             }
-
+            */
         }
 
         /// <summary>
@@ -87,12 +87,42 @@ namespace NVNC.Encodings
 
         public virtual void WriteData()
         {
-            pwriter.Write(Convert.ToUInt16(rectangle.X));
-            pwriter.Write(Convert.ToUInt16(rectangle.Y));
-            pwriter.Write(Convert.ToUInt16(rectangle.Width));
-            pwriter.Write(Convert.ToUInt16(rectangle.Height));
+            rfb.Writer.Write(Convert.ToUInt16(rectangle.X));
+            rfb.Writer.Write(Convert.ToUInt16(rectangle.Y));
+            rfb.Writer.Write(Convert.ToUInt16(rectangle.Width));
+            rfb.Writer.Write(Convert.ToUInt16(rectangle.Height));
         }
+        /*
+        public virtual byte[] WriteStream()
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (BigEndianBinaryWriter bw = new BigEndianBinaryWriter(ms))
+                {
+                    bw.Write(Convert.ToUInt16(rectangle.X));
+                    bw.Write(Convert.ToUInt16(rectangle.Y));
+                    bw.Write(Convert.ToUInt16(rectangle.Width));
+                    bw.Write(Convert.ToUInt16(rectangle.Height));
+                }
+                return ms.ToArray();
+            }
+        }
+        */
 
+        protected void WritePixel32(int px)
+        {
+            int pixel;
+            int b = 0;
+            byte[] bytes = new byte[4];
+            pixel = px;
+
+            bytes[b++] = (byte)(pixel & 0xFF);
+            bytes[b++] = (byte)((pixel >> 8) & 0xFF);
+            bytes[b++] = (byte)((pixel >> 16) & 0xFF);
+            bytes[b++] = (byte)((pixel >> 24) & 0xFF);
+
+            writer.Write(bytes);
+        }
         protected int[] CopyPixels(int[] pixels, int scanline, int x, int y, int w, int h)
         {
             int size = w * h;

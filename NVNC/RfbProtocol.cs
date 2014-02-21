@@ -1,5 +1,5 @@
-// VncSharp - .NET VNC Client Library
-// Copyright (C) 2008 David Humphrey
+// NVNC - .NET VNC Server Library
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,7 +40,8 @@ namespace NVNC
             RRE_ENCODING = 2,  //working
             CORRE_ENCODING = 4,  //error
             HEXTILE_ENCODING = 5,  //working
-            ZRLE_ENCODING = 16, //not implemented
+            ZRLE_ENCODING = 16, //error
+            ZLIB_ENCODING = 6,
         }
 
         // Server to Client Message-Type constants
@@ -83,6 +84,7 @@ namespace NVNC
         protected NetworkStream stream;	// Stream object used to send/receive data
         protected BinaryReader reader;	// Integral rather than Byte values are typically
         protected BinaryWriter writer;	// sent and received, so these handle this.
+        protected ZrleCompressedWriter zrleWriter;
 
         public bool isRunning;
         public bool isConnected
@@ -134,7 +136,7 @@ namespace NVNC
         /// <returns>Returns a Int32 representation of the encoding.</returns>
         public Encoding GetPreferredEncoding()
         {
-            Encoding prefEnc = Encoding.RAW_ENCODING;
+            Encoding prefEnc = Encoding.ZRLE_ENCODING;
             try
             {
                 for (int i = 0; i < Encodings.Length; i++)
@@ -143,7 +145,7 @@ namespace NVNC
             }
             catch
             {
-                prefEnc = Encoding.RAW_ENCODING;
+                prefEnc = Encoding.ZLIB_ENCODING;
             }
             return prefEnc;
         }
@@ -182,25 +184,14 @@ namespace NVNC
                 return writer;
             }
         }
-
-        /*
-        public ZRLECompressedReader ZrleReader
-        {
-            get
-            {
-                return zrleReader;
-            }
-        }
-        public ZRLECompressedWriter ZrleWriter
+        public ZrleCompressedWriter ZrleWriter
         {
             get
             {
                 return zrleWriter;
             }
         }
-
-       */
-
+        
         //Main server loop
         public void Start()
         {
@@ -208,6 +199,7 @@ namespace NVNC
             try
             {
                 serverSocket = new TcpListener(IPAddress.Any, Port);
+                serverSocket.Server.NoDelay = true;
                 serverSocket.Start();
             }
             catch (Exception ex)
@@ -218,18 +210,21 @@ namespace NVNC
             }
             try
             {
+                SocketError error = SocketError.AccessDenied;
                 localClient = serverSocket.AcceptSocket();
+                localClient.NoDelay = true;
                 IPAddress localIP = IPAddress.Parse(((IPEndPoint)localClient.RemoteEndPoint).Address.ToString());
                 Console.WriteLine(localIP);
-                stream = new NetworkStream(localClient);
+                stream = new NetworkStream(localClient, true);
                 reader = new BigEndianBinaryReader(stream);
                 writer = new BigEndianBinaryWriter(stream);
+                zrleWriter = new ZrleCompressedWriter(stream);
                 clients.Add(localClient);
             }
             catch (Exception ex) { Console.WriteLine(ex.ToString()); }
 
         }
-        /*public void DoShit()
+        /*public void  ()
         {
             this.dw = this.device.getDefaultConfiguration().getBounds().width;
             this.dh = this.device.getDefaultConfiguration().getBounds().height;
@@ -694,14 +689,14 @@ namespace NVNC
         /// Receives the format to be used when sending Framebuffer Updates.
         /// </summary>
         /// <returns>A Framebuffer telling the server how to encode pixel data. Typically this will be the same one sent by the server during initialization.</returns>
-        public Framebuffer ReadSetPixelFormat()
+        public Framebuffer ReadSetPixelFormat(int w, int h)
         {
             Framebuffer ret = null;
             try
             {
                 ReadPadding(3);
                 byte[] pf = ReadBytes(16);
-                ret = Framebuffer.FromPixelFormat(pf, 0, 0);
+                ret = Framebuffer.FromPixelFormat(pf, w, h);
                 return ret;
             }
             catch (IOException ex)
@@ -748,6 +743,8 @@ namespace NVNC
                 ushort width = reader.ReadUInt16();
                 ushort height = reader.ReadUInt16();
 
+                Console.WriteLine("FrameBufferUpdateRequest on x: " + x + " y: " + y + " w: " + width + " h:" + height);
+                //Console.ReadLine();
                 /*new Thread(delegate() { */DoFrameBufferUpdate(fb, incremental, x, y, width, height); /*}).Start();*/
             }
             catch (IOException ex)
@@ -763,6 +760,7 @@ namespace NVNC
         /// </summary>
         private void DoFrameBufferUpdate(Framebuffer fb, bool incremental, int x, int y, int width, int height)
         {
+            Console.WriteLine("X: " + x + " Y: " + y + " W: " + fb.Width + " H: " + fb.Height);
             int w = fb.Width;
             int h = fb.Height;
             if ((x < 0) || (y < 0) || (width <= 0) || (height <= 0))
@@ -781,59 +779,41 @@ namespace NVNC
                 return;
             }
 
-            /*
-            Rectangle[] rects = new Rectangle[16];
-            Bitmap[] oldImages = new Bitmap[16];
-            EncodedRectangle[] arrEnc = null;
-
-            int i = width / 4;
-            int j = height / 4;
-            int m = 0;
-            Rectangle lRect = Rectangle.Empty;
-
-            Bitmap localBitmap = PixelGrabber.CreateScreenCapture(new Rectangle(0, 0, width, height));
-            for (int k = 0; k < 4; k++)
-                for (m = 0; m < 4; m++)
-                {
-                    lRect = new Rectangle();
-                    lRect.X = (i * k);
-                    lRect.Y = (j * m);
-                    lRect.Width = i;
-                    lRect.Height = j;
-                    lRect = PixelGrabber.AlignRectangle(lRect, width, height);
-                    rects[(k * 4 + m)] = lRect;
-                    oldImages[(k * 4 + m)] = PixelGrabber.GetSubImage(localBitmap, new Rectangle(lRect.X, lRect.Y, lRect.Width, lRect.Height));
-                }
-            List<EncodedRectangle> rCol = new List<EncodedRectangle>();
-            foreach (Rectangle r in rects)
-            {
-                try
-                {
-                    
-                    EncodedRectangleFactory factory = new EncodedRectangleFactory(this, fb);
-                    EncodedRectangle localRect = factory.Build(r, GetPreferredEncoding()); //factory.Build(PixelGrabber.GetSubImage(lBitmap, new Rectangle(localRectangle1.X, localRectangle1.Y, localRectangle1.Width, localRectangle1.Height)), localRectangle1.X + localRectangle2.X, localRectangle1.Y + localRectangle2.Y, rp.GetPreferredEncoding());
-                    localRect.Encode();
-                    rCol.Add(localRect);
-                }
-                catch (Exception localException)
-                {
-                    Console.WriteLine(localException.StackTrace.ToString());
-                    if (localException is IOException)
-                    { this.Close(); return; }
-                }
-            }
-            arrEnc = rCol.ToArray();
-            if (arrEnc != null)
-                WriteFrameBufferUpdate(arrEnc);
-            */
-            
-            EncodedRectangle[] arrayOfRect = null;
+            Console.WriteLine("Bounds OK!");
+            List<EncodedRectangle> lst = new List<EncodedRectangle>();
+            List<byte[]> lstHash = new List<byte[]>();
             try
             {
+                //Console.WriteLine("Framebuffer: ");
+                //fb.Print();
+                //Console.ReadLine();
+
+                System.Diagnostics.Stopwatch tip = System.Diagnostics.Stopwatch.StartNew();
                 EncodedRectangleFactory factory = new EncodedRectangleFactory(this, fb);
-                EncodedRectangle localRect = factory.Build(new Rectangle(x, y, width, height), GetPreferredEncoding());
+                /*
+                int i = width / 4;
+                int j = height / 4;
+                int m = 0;
+                Rectangle lRect = Rectangle.Empty;
+                for (int k = 0; k < 4; k++)
+                    for (m = 0; m < 4; m++)
+                    {
+                        lRect = new Rectangle();
+                        lRect.X = (i * k);
+                        lRect.Y = (j * m);
+                        lRect.Width = i;
+                        lRect.Height = j;
+                        //lRect = PixelGrabber.AlignRectangle(lRect, width, height);
+                        
+                        EncodedRectangle localRect = factory.Build(lRect, GetPreferredEncoding());
+                        localRect.Encode();
+                        lst.Add(localRect);
+                    }
+                 */
+                EncodedRectangle localRect = factory.Build(new Rectangle(x,y,width, height), GetPreferredEncoding());
                 localRect.Encode();
-                arrayOfRect = new EncodedRectangle[] { localRect };
+                lst.Add(localRect);
+                Console.WriteLine("Encoding took: " + tip.Elapsed);
             }
             catch (Exception localException)
             {
@@ -841,8 +821,8 @@ namespace NVNC
                 if (localException is IOException)
                 { this.Close(); return; }
             }
-            if (arrayOfRect != null)
-                WriteFrameBufferUpdate(arrayOfRect);
+            if (lst.Count != 0)
+                WriteFrameBufferUpdate(lst.ToArray());
             
         }
 
@@ -852,16 +832,42 @@ namespace NVNC
         /// </summary>
         public void WriteFrameBufferUpdate(EncodedRectangle[] arrRectangles)
         {
+            System.Diagnostics.Stopwatch Watch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
                 WriteServerMessageType(RfbProtocol.FRAMEBUFFER_UPDATE);
-                WritePadding(1);
+                writer.Write((byte)0);//WritePadding(1);
                 writer.Write(Convert.ToUInt16(arrRectangles.Length));
 
                 foreach (EncodedRectangle e in arrRectangles)
                     e.WriteData();
 
                 writer.Flush();
+                Watch.Stop();
+                Console.WriteLine("Sending took: " + Watch.Elapsed);
+                /*
+                //using (MemoryStream ms = new MemoryStream())
+                //{
+                    //using (BinaryWriter bw = new BigEndianBinaryWriter(ms))
+                    //{
+                        //SocketError error = SocketError.AccessDenied;
+
+                        bw.Write((byte)RfbProtocol.FRAMEBUFFER_UPDATE);
+                        bw.Write((byte)0);
+                        bw.Write(Convert.ToUInt16(arrRectangles.Length));
+                        foreach (EncodedRectangle e in arrRectangles)
+                            bw.Write(e.WriteStream());
+                        //bw.Flush();
+                    //}
+
+                    //byte[] sendData = ms.ToArray();
+                    //Console.WriteLine("Send data size (outside): " + sendData.Length);
+                    //System.Windows.Forms.MessageBox.Show("OK");
+                    //writer.Write(sendData, 0, sendData.Length);
+                    writer.Flush();
+                    
+                //}
+                */
             }
             catch (IOException ex)
             {
@@ -905,7 +911,7 @@ namespace NVNC
                 byte buttonMask = reader.ReadByte();
                 ushort X = reader.ReadUInt16();
                 ushort Y = reader.ReadUInt16();
-                new Thread(delegate() { Robot.PointerEvent(buttonMask, X, Y); }).Start();
+                /*new Thread(delegate() { */ Robot.PointerEvent(buttonMask, X, Y); /*}).Start();*/
             }
             catch (IOException ex)
             {

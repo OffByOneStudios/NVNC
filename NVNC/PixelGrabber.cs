@@ -1,5 +1,5 @@
 ﻿// NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,51 @@ namespace NVNC
 {
     public static unsafe class PixelGrabber
     {
+        /*
+        public static byte[] CreateScreenCapture2(Rectangle r)
+        {
+            try
+            {
+                int width = r.Width;
+                int height = r.Height;
+                Bitmap bitmap = new Bitmap(width, height);
+                Graphics g = Graphics.FromImage(bitmap);
+                g.CopyFromScreen(r.X, r.Y, 0, 0, new Size(width, height));
+                ImageCodecInfo imageEncoder = GetEncoder(ImageFormat.Bmp);
+                // Create an Encoder object based on the GUID
+                // for the Quality parameter category.
+                System.Drawing.Imaging.Encoder myEncoder = System.Drawing.Imaging.Encoder.Quality;
+                // Create an EncoderParameters object.
+                // An EncoderParameters object has an array of EncoderParameter
+                // objects. In this case, there is only one
+                // EncoderParameter object in the array.
+                EncoderParameters myEncoderParameters = new EncoderParameters(1);
+
+                EncoderParameter myEncoderParameter = new EncoderParameter(myEncoder, 100);
+                myEncoderParameters.Param[0] = myEncoderParameter;
+                using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                {
+                    bitmap.Save(ms, imageEncoder, myEncoderParameters);
+                    return ms.ToArray();
+                }
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+        private static ImageCodecInfo GetEncoder(ImageFormat format)
+        {
+            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageDecoders();
+
+            foreach (ImageCodecInfo codec in codecs)
+            {
+                if (codec.FormatID == format.Guid)
+                    return codec;
+            }
+            return null;
+        }
+        */
         public static Bitmap CreateScreenCapture(Rectangle r)
         {
             try
@@ -36,8 +81,10 @@ namespace NVNC
                 g.CopyFromScreen(r.X, r.Y, 0, 0, new Size(width, height));
                 return bitmap;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.ToString());
+                Console.WriteLine(ex.Message);
                 System.Threading.Thread.Sleep(500);
                 try
                 {
@@ -54,6 +101,22 @@ namespace NVNC
                 return null;
             }
         }
+        public static byte[] BitmapToPng(Bitmap bmp)
+        {
+            using (System.IO.MemoryStream stream = new System.IO.MemoryStream())
+            {
+                bmp.Save(stream, ImageFormat.Png);
+                return stream.ToArray();
+            }
+        }
+        public static Image BitmapToPng(Image bmp)
+        {
+            using (System.IO.MemoryStream stream = new System.IO.MemoryStream())
+            {
+                bmp.Save(stream, ImageFormat.Png);
+                return new Bitmap(stream);
+            }
+        }
         public static Bitmap CreateScreenCapture(int x, int y, int w, int h)
         {
             Bitmap bitmap = new Bitmap(w, h);
@@ -61,10 +124,9 @@ namespace NVNC
             g.CopyFromScreen(x, y, 0, 0, new Size(w, h));
             return bitmap;
         }
-
         public static byte[] GrabPixels(Bitmap bmp, PixelFormat pf)
         {
-            BitmapData bData = bmp.LockBits(new Rectangle(new Point(), bmp.Size),
+            BitmapData bData = bmp.LockBits(new Rectangle(new Point(0,0), bmp.Size),
                 ImageLockMode.ReadOnly,
                 pf);
             // number of bytes in the bitmap
@@ -150,6 +212,46 @@ namespace NVNC
             return bytes;
 
         }
+        public static byte[] GrabCompressedPixels(int[] pixels, int scanline, Rectangle rectangle, Framebuffer fb)
+        {
+            // Encode as bytes
+            int x = rectangle.X;
+            int y = rectangle.Y;
+            int w = rectangle.Width;
+            int h = rectangle.Height;
+
+            byte[] bytes = null;
+
+            int b = 0;
+            int i = 0;
+            int s = 0;
+            int pixel;
+            int size = rectangle.Width * rectangle.Height;
+            int offsetX = rectangle.X;
+            int offsetY = rectangle.Y;
+            int jump = scanline - w;
+            int p = (y - offsetY) * w + x - offsetX;
+
+
+            bytes = new byte[size << 2];
+            for (; i < size; i++, s++, p++)
+            {
+                if (s == w)
+                {
+                    s = 0;
+                    p += jump;
+                }
+                int tmp = pixels[p];
+                pixel = fb.TranslatePixel(tmp);
+                //pixel = pixels[p];
+
+                bytes[b++] = (byte)(pixel & 0xFF); //B
+                bytes[b++] = (byte)((pixel >> 8) & 0xFF); //G
+                bytes[b++] = (byte)((pixel >> 16) & 0xFF); //R
+                // bytes[b++] = (byte)((pixel >> 24) & 0xFF); //A
+            }
+            return bytes;
+        }
         public static byte[] GrabPixels(int[] pixels, Rectangle rectangle, Framebuffer fb)
         {
             // Encode as bytes
@@ -182,7 +284,8 @@ namespace NVNC
                             s = 0;
                             p += jump;
                         }
-                        pixel = fb.TranslatePixel(pixels[p]);
+                        int tmp = pixels[p];
+                        pixel = fb.TranslatePixel(tmp);
                         //pixel = pixels[p];
 
                         bytes[b++] = (byte)(pixel & 0xFF); //B
@@ -290,7 +393,7 @@ namespace NVNC
             img.UnlockBits(bmp);
             return array;
         }
-        public static int[] GrabPixels(Bitmap img, int x, int y, int w, int h, PixelFormat pf)
+        public static int[]  GrabPixels(Bitmap img, int x, int y, int w, int h, PixelFormat pf)
         {
             int[] array = new int[w * h];
             BitmapData bmp = img.LockBits(new Rectangle(x, y, w, h), ImageLockMode.ReadOnly, pf);

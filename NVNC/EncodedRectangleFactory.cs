@@ -1,5 +1,5 @@
 // NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ namespace NVNC
         public EncodedRectangle Build(Rectangle rectangle, RfbProtocol.Encoding encoding)
         {
             EncodedRectangle e = null;
-            Bitmap bmp = PixelGrabber.CreateScreenCapture(new Rectangle(0,0, System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width, System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height));
+            Bitmap bmp = PixelGrabber.CreateScreenCapture(rectangle);
             int[] pixels = PixelGrabber.GrabPixels(bmp, rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, bmp.PixelFormat);
 
             switch (encoding)
@@ -72,9 +72,12 @@ namespace NVNC
                 case RfbProtocol.Encoding.HEXTILE_ENCODING:
                     e = new HextileRectangle(rfb, framebuffer, pixels, rectangle);
                     break;
-                /*case RfbProtocol.ZRLE_ENCODING:
+                case RfbProtocol.Encoding.ZRLE_ENCODING:
                     e = new ZrleRectangle(rfb, framebuffer, pixels, rectangle);				
-                    break;*/
+                    break;
+                case RfbProtocol.Encoding.ZLIB_ENCODING:
+                    e = new ZlibRectangle(rfb, framebuffer, pixels, rectangle);
+                    break;
                 default:
                     // Sanity check
                     throw new VncProtocolException("Unsupported Encoding Format received: " + encoding.ToString() + ".");
@@ -104,9 +107,12 @@ namespace NVNC
                 case RfbProtocol.Encoding.HEXTILE_ENCODING:
                     e = new HextileRectangle(rfb, framebuffer, pixels, rect);
                     break;
-                /*case RfbProtocol.ZRLE_ENCODING:
-                    e = new ZrleRectangle(rfb, framebuffer, pixels, rectangle);				
-                    break;*/
+                case RfbProtocol.Encoding.ZRLE_ENCODING:
+                    e = new ZrleRectangle(rfb, framebuffer, pixels, rect);				
+                    break;
+                case RfbProtocol.Encoding.ZLIB_ENCODING:
+                    e = new ZlibRectangle(rfb, framebuffer, pixels, rect);
+                    break;
                 default:
                     // Sanity check
                     throw new VncProtocolException("Unsupported Encoding Format received: " + encoding.ToString() + ".");

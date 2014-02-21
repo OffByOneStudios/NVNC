@@ -1,5 +1,5 @@
 // NVNC - .NET VNC Server Library
-// Copyright (C) 2012 T!T@N
+// Copyright (C) 2014 T!T@N
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ namespace NVNC.Encodings
         {
             this.pixels = pixels;
         }
+        
         public override void Encode()
         {
             /*
@@ -39,19 +40,47 @@ namespace NVNC.Encodings
             for (int i = 0; i < pixels.Length; i++)
                 framebuffer[i] = pixels[i];
              */
-            bytes = PixelGrabber.GrabPixels(pixels, rectangle, framebuffer);
+            if(bytes == null)
+                bytes = PixelGrabber.GrabPixels(pixels, rectangle, framebuffer);
 
         }
         public override void WriteData()
         {
             base.WriteData();
-            pwriter.Write(Convert.ToUInt32(RfbProtocol.Encoding.RAW_ENCODING));
-            pwriter.Write(bytes);
+            writer.Write(Convert.ToUInt32(RfbProtocol.Encoding.RAW_ENCODING));
+            writer.Write(bytes);
 
             /*  Very slow, not practically usable
             for (int i = 0; i < framebuffer.pixels.Length; i++)
                 pwriter.WritePixel(framebuffer[i]);
             */
         }
+
+
+
+        /*
+        public override byte[] WriteStream()
+        {
+            /*
+            Bitmap x = PixelGrabber.GrabImage(64, 64, pixels);
+            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            {
+                x.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
+                System.IO.File.WriteAllBytes("test.bmp", ms.ToArray());
+            }
+            System.Windows.Forms.MessageBox.Show("OK");
+            
+            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            {
+                using (BigEndianBinaryWriter bw = new BigEndianBinaryWriter(ms))
+                {
+                    bw.Write(base.WriteStream());
+                    bw.Write(Convert.ToUInt32(RfbProtocol.Encoding.RAW_ENCODING));
+                    bw.Write(bytes);
+                }
+                return ms.ToArray();
+            }
+        }
+        */
     }
 }
